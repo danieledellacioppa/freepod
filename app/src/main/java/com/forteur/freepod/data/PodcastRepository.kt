@@ -17,7 +17,7 @@ class PodcastRepository(
 
     companion object {
         // Cambia questo valore con il feed RSS che vuoi usare.
-        const val PODCAST_FEED_URL = "INSERISCI_QUI_L_URL_RSS_DI_EASY_CATALAN"
+        const val PODCAST_FEED_URL = "https://feeds.fireside.fm/easycatalan/rss"
     }
 
     suspend fun fetchEpisodes(): List<PodcastEpisode> = withContext(Dispatchers.IO) {
