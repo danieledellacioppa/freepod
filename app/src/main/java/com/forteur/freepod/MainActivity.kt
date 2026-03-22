@@ -4,14 +4,15 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.rememberNavController
+import com.forteur.freepod.data.PodcastRepository
+import com.forteur.freepod.ui.navigation.FreePodNavHost
+import com.forteur.freepod.ui.screens.EpisodeListViewModel
 import com.forteur.freepod.ui.theme.FreePodTheme
+import okhttp3.OkHttpClient
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,29 +20,28 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             FreePodTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                val repository = PodcastRepository(OkHttpClient())
+                val episodeListViewModel: EpisodeListViewModel = viewModel(
+                    factory = EpisodeListViewModel.factory(repository)
+                )
+                FreePodApp(episodeListViewModel)
             }
         }
     }
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
+private fun FreePodApp(episodeListViewModel: EpisodeListViewModel) {
+    val navController = rememberNavController()
+    FreePodNavHost(
+        navController = navController,
+        episodeListViewModel = episodeListViewModel
     )
 }
 
 @Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
+private fun FreePodPreview() {
     FreePodTheme {
-        Greeting("Android")
     }
 }
