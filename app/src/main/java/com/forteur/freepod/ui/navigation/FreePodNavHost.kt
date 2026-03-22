@@ -2,11 +2,9 @@ package com.forteur.freepod.ui.navigation
 
 import android.net.Uri
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.media3.exoplayer.ExoPlayer
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -14,7 +12,6 @@ import androidx.navigation.navArgument
 import com.forteur.freepod.ui.player.PlayerScreen
 import com.forteur.freepod.ui.screens.EpisodeListScreen
 import com.forteur.freepod.ui.screens.EpisodeListViewModel
-import androidx.navigation.NavHostController
 
 private const val LIST_ROUTE = "episodes"
 private const val PLAYER_ROUTE = "player"
@@ -26,13 +23,6 @@ fun FreePodNavHost(
     episodeListViewModel: EpisodeListViewModel
 ) {
     val uiState by episodeListViewModel.uiState.collectAsStateWithLifecycle()
-    val player = remember(navController.context) { ExoPlayer.Builder(navController.context).build() }
-
-    DisposableEffect(player) {
-        onDispose {
-            player.release()
-        }
-    }
 
     NavHost(
         navController = navController,
@@ -56,10 +46,7 @@ fun FreePodNavHost(
             val episode = episodeListViewModel.findEpisodeByAudioUrl(audioUrl)
 
             if (episode != null) {
-                PlayerScreen(
-                    episode = episode,
-                    player = player
-                )
+                PlayerScreen(episode = episode)
             }
         }
     }
