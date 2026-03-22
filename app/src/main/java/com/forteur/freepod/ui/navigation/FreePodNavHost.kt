@@ -2,6 +2,7 @@ package com.forteur.freepod.ui.navigation
 
 import android.net.Uri
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -26,6 +27,12 @@ fun FreePodNavHost(
 ) {
     val uiState by episodeListViewModel.uiState.collectAsStateWithLifecycle()
     val player = remember(navController.context) { ExoPlayer.Builder(navController.context).build() }
+
+    DisposableEffect(player) {
+        onDispose {
+            player.release()
+        }
+    }
 
     NavHost(
         navController = navController,
