@@ -9,6 +9,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.forteur.freepod.playback.PlaybackControllerViewModel
 import com.forteur.freepod.ui.player.PlayerScreen
 import com.forteur.freepod.ui.screens.EpisodeListScreen
 import com.forteur.freepod.ui.screens.EpisodeListViewModel
@@ -20,9 +21,11 @@ private const val ARG_AUDIO_URL = "audioUrl"
 @Composable
 fun FreePodNavHost(
     navController: NavHostController,
-    episodeListViewModel: EpisodeListViewModel
+    episodeListViewModel: EpisodeListViewModel,
+    playbackControllerViewModel: PlaybackControllerViewModel
 ) {
     val uiState by episodeListViewModel.uiState.collectAsStateWithLifecycle()
+    val playerUiState by playbackControllerViewModel.uiState.collectAsStateWithLifecycle()
 
     NavHost(
         navController = navController,
@@ -46,7 +49,15 @@ fun FreePodNavHost(
             val episode = episodeListViewModel.findEpisodeByAudioUrl(audioUrl)
 
             if (episode != null) {
-                PlayerScreen(episode = episode)
+                PlayerScreen(
+                    episode = episode,
+                    playerUiState = playerUiState,
+                    onStartEpisode = playbackControllerViewModel::playEpisode,
+                    onTogglePlayPause = playbackControllerViewModel::togglePlayPause,
+                    onSeekBack = playbackControllerViewModel::seekBack,
+                    onSeekForward = playbackControllerViewModel::seekForward,
+                    onSeekTo = playbackControllerViewModel::seekTo
+                )
             }
         }
     }

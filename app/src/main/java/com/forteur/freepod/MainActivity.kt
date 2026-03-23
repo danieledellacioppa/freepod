@@ -9,6 +9,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.forteur.freepod.data.PodcastRepository
+import com.forteur.freepod.playback.PlaybackControllerViewModel
 import com.forteur.freepod.ui.navigation.FreePodNavHost
 import com.forteur.freepod.ui.screens.EpisodeListViewModel
 import com.forteur.freepod.ui.theme.FreePodTheme
@@ -24,18 +25,28 @@ class MainActivity : ComponentActivity() {
                 val episodeListViewModel: EpisodeListViewModel = viewModel(
                     factory = EpisodeListViewModel.factory(repository)
                 )
-                FreePodApp(episodeListViewModel)
+                val playbackControllerViewModel: PlaybackControllerViewModel = viewModel(
+                    factory = PlaybackControllerViewModel.factory(application)
+                )
+                FreePodApp(
+                    episodeListViewModel = episodeListViewModel,
+                    playbackControllerViewModel = playbackControllerViewModel
+                )
             }
         }
     }
 }
 
 @Composable
-private fun FreePodApp(episodeListViewModel: EpisodeListViewModel) {
+private fun FreePodApp(
+    episodeListViewModel: EpisodeListViewModel,
+    playbackControllerViewModel: PlaybackControllerViewModel
+) {
     val navController = rememberNavController()
     FreePodNavHost(
         navController = navController,
-        episodeListViewModel = episodeListViewModel
+        episodeListViewModel = episodeListViewModel,
+        playbackControllerViewModel = playbackControllerViewModel
     )
 }
 
