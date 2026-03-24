@@ -6,7 +6,6 @@ import androidx.media3.common.C
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
-import androidx.media3.session.MediaSessionService.ControllerInfo
 
 class PlaybackService : MediaSessionService() {
 
@@ -30,7 +29,7 @@ class PlaybackService : MediaSessionService() {
         mediaSession = MediaSession.Builder(this, requireNotNull(player)).build()
     }
 
-    override fun onGetSession(controllerInfo: ControllerInfo): MediaSession? {
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? {
         return mediaSession
     }
 
