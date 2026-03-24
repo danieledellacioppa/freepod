@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 data class EpisodeListUiState(
+    val podcastTitle: String = "",
+    val feedUrl: String = "",
     val isLoading: Boolean = false,
     val episodes: List<PodcastEpisode> = emptyList(),
     val errorMessage: String? = null
@@ -20,22 +22,30 @@ class EpisodeListViewModel(
     private val repository: PodcastRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(EpisodeListUiState(isLoading = true))
+    private val _uiState = MutableStateFlow(EpisodeListUiState())
     val uiState: StateFlow<EpisodeListUiState> = _uiState.asStateFlow()
 
-    init {
-        loadEpisodes()
-    }
-
-    fun loadEpisodes() {
+    fun loadEpisodes(feedUrl: String, podcastTitle: String) {
+        if (feedUrl.isBlank()) return
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            runCatching { repository.fetchEpisodes() }
+            _uiState.value = EpisodeListUiState(
+                podcastTitle = podcastTitle,
+                feedUrl = feedUrl,
+                isLoading = true
+            )
+            runCatching { repository.fetchEpisodes(feedUrl) }
                 .onSuccess { episodes ->
-                    _uiState.value = EpisodeListUiState(isLoading = false, episodes = episodes)
+                    _uiState.value = EpisodeListUiState(
+                        podcastTitle = podcastTitle,
+                        feedUrl = feedUrl,
+                        isLoading = false,
+                        episodes = episodes
+                    )
                 }
                 .onFailure { error ->
                     _uiState.value = EpisodeListUiState(
+                        podcastTitle = podcastTitle,
+                        feedUrl = feedUrl,
                         isLoading = false,
                         errorMessage = error.message ?: "Errore sconosciuto durante il caricamento"
                     )

@@ -35,9 +35,9 @@ fun EpisodeListScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text(text = "FreePod")
+                        Text(text = "Episodes")
                         Text(
-                            text = "Easy Catalan",
+                            text = uiState.podcastTitle,
                             style = MaterialTheme.typography.labelMedium
                         )
                     }
