@@ -55,7 +55,9 @@ class PodcastIndexService(
         val podcasts = mutableListOf<PodcastSummary>()
         for (i in 0 until feeds.length()) {
             val item = feeds.optJSONObject(i) ?: continue
-            val feedUrl = item.optString("url").ifBlank { continue }
+
+            val feedUrl = item.optString("url")
+            if (feedUrl.isBlank()) continue
 
             podcasts.add(
                 PodcastSummary(
