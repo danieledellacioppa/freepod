@@ -10,6 +10,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.compose.rememberNavController
+import com.forteur.freepod.data.DiscoveryProvider
+import com.forteur.freepod.data.DiscoveryProviderConfig
+import com.forteur.freepod.data.ItunesSearchService
+import com.forteur.freepod.data.PodcastDiscoveryService
 import com.forteur.freepod.data.PodcastIndexAuthInterceptor
 import com.forteur.freepod.data.PodcastIndexService
 import com.forteur.freepod.data.PodcastRepository
@@ -30,19 +34,25 @@ class MainActivity : ComponentActivity() {
         setContent {
             FreePodTheme {
                 val rssClient = OkHttpClient()
-                val podcastIndexClient = OkHttpClient.Builder()
-                    .addInterceptor(PodcastIndexAuthInterceptor())
-                    .build()
+
+                val discoveryService: PodcastDiscoveryService = when (DiscoveryProviderConfig.ACTIVE_PROVIDER) {
+                    DiscoveryProvider.ITUNES -> ItunesSearchService(OkHttpClient())
+                    DiscoveryProvider.PODCAST_INDEX -> {
+                        val podcastIndexClient = OkHttpClient.Builder()
+                            .addInterceptor(PodcastIndexAuthInterceptor())
+                            .build()
+                        PodcastIndexService(podcastIndexClient)
+                    }
+                }
 
                 val rssRepository = PodcastRepository(rssClient)
-                val podcastIndexService = PodcastIndexService(podcastIndexClient)
                 val subscriptionRepository = SubscriptionRepository(
                     SubscriptionLocalDataSource(applicationContext)
                 )
 
                 val discoverViewModel: DiscoverViewModel = viewModel(
                     factory = DiscoverViewModel.factory(
-                        podcastIndexService = podcastIndexService,
+                        discoveryService = discoveryService,
                         subscriptionRepository = subscriptionRepository
                     )
                 )

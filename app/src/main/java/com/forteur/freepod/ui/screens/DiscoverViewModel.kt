@@ -3,7 +3,7 @@ package com.forteur.freepod.ui.screens
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.forteur.freepod.data.PodcastIndexService
+import com.forteur.freepod.data.PodcastDiscoveryService
 import com.forteur.freepod.data.SubscriptionRepository
 import com.forteur.freepod.model.PodcastSummary
 import kotlinx.coroutines.FlowPreview
@@ -25,7 +25,7 @@ data class DiscoverUiState(
 
 @OptIn(FlowPreview::class)
 class DiscoverViewModel(
-    private val podcastIndexService: PodcastIndexService,
+    private val discoveryService: PodcastDiscoveryService,
     private val subscriptionRepository: SubscriptionRepository
 ) : ViewModel() {
 
@@ -81,7 +81,7 @@ class DiscoverViewModel(
     private fun loadTrending() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            runCatching { podcastIndexService.trendingPodcasts() }
+            runCatching { discoveryService.trendingPodcasts() }
                 .onSuccess { podcasts ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
@@ -102,7 +102,7 @@ class DiscoverViewModel(
     private fun search(query: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            runCatching { podcastIndexService.searchPodcasts(query) }
+            runCatching { discoveryService.searchPodcasts(query) }
                 .onSuccess { podcasts ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
@@ -122,13 +122,13 @@ class DiscoverViewModel(
 
     companion object {
         fun factory(
-            podcastIndexService: PodcastIndexService,
+            discoveryService: PodcastDiscoveryService,
             subscriptionRepository: SubscriptionRepository
         ): ViewModelProvider.Factory {
             return object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return DiscoverViewModel(podcastIndexService, subscriptionRepository) as T
+                    return DiscoverViewModel(discoveryService, subscriptionRepository) as T
                 }
             }
         }
