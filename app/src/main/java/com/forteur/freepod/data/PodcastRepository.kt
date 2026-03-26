@@ -15,14 +15,9 @@ class PodcastRepository(
     private val parser: RssFeedParser = RssFeedParser()
 ) {
 
-    companion object {
-        // Cambia questo valore con il feed RSS che vuoi usare.
-        const val PODCAST_FEED_URL = "https://www.easycatalan.fm/rss"
-    }
-
-    suspend fun fetchEpisodes(): List<PodcastEpisode> = withContext(Dispatchers.IO) {
+    suspend fun fetchEpisodes(feedUrl: String): List<PodcastEpisode> = withContext(Dispatchers.IO) {
         val request = Request.Builder()
-            .url(PODCAST_FEED_URL)
+            .url(feedUrl)
             .build()
 
         httpClient.newCall(request).execute().use { response ->
