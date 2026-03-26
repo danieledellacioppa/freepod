@@ -18,6 +18,15 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+
+        android.buildFeatures.buildConfig = true
+
+        val podcastIndexKey = project.findProperty("PODCAST_INDEX_KEY") as String? ?: ""
+        val podcastIndexSecret = project.findProperty("PODCAST_INDEX_SECRET") as String? ?: ""
+
+        buildConfigField("String", "PODCAST_INDEX_KEY", "\"$podcastIndexKey\"")
+        buildConfigField("String", "PODCAST_INDEX_SECRET", "\"$podcastIndexSecret\"")
     }
 
     buildTypes {
