@@ -21,6 +21,9 @@ import com.forteur.freepod.util.EXTRA_IMAGE_URL
 import com.forteur.freepod.util.EXTRA_PLAY_REQUEST_ID
 import com.forteur.freepod.util.EXTRA_PODCAST_TITLE
 import com.forteur.freepod.util.LOG_TAG_CONTROLLER
+import com.forteur.freepod.util.debugLog
+import com.forteur.freepod.util.playbackSuppressionReasonToString
+import com.forteur.freepod.util.playWhenReadyChangeReasonToString
 import com.forteur.freepod.util.playerStateToString
 import com.forteur.freepod.util.safeMediaItemSummary
 import com.forteur.freepod.util.safeMediaMetadataSummary
@@ -54,7 +57,7 @@ class PlaybackControllerViewModel(
 
     private val listener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {
-            Log.d(
+            debugLog(
                 LOG_TAG_CONTROLLER,
                 "Controller onPlaybackStateChanged | state=${playerStateToString(playbackState)}($playbackState), current=${safeMediaItemSummary(controller?.currentMediaItem)}"
             )
@@ -62,17 +65,27 @@ class PlaybackControllerViewModel(
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
-            Log.d(
+            val activeController = controller
+            debugLog(
                 LOG_TAG_CONTROLLER,
-                "Controller onIsPlayingChanged | isPlaying=$isPlaying, playbackState=${controller?.playbackState?.let(::playerStateToString)}"
+                "Controller onIsPlayingChanged | isPlaying=$isPlaying, playbackState=${activeController?.playbackState?.let(::playerStateToString)}, playWhenReady=${activeController?.playWhenReady}, suppressionReason=${activeController?.playbackSuppressionReason?.let(::playbackSuppressionReasonToString)}, currentPosition=${activeController?.currentPosition}, bufferedPosition=${activeController?.bufferedPosition}"
             )
             publishState()
         }
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-            Log.d(
+            debugLog(
                 LOG_TAG_CONTROLLER,
                 "Controller onMediaItemTransition | reason=$reason, item=${safeMediaItemSummary(mediaItem)}"
+            )
+            publishState()
+        }
+
+        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+            val activeController = controller
+            debugLog(
+                LOG_TAG_CONTROLLER,
+                "Controller onPlayWhenReadyChanged | playWhenReady=$playWhenReady, reason=${playWhenReadyChangeReasonToString(reason)}($reason), isPlaying=${activeController?.isPlaying}, suppressionReason=${activeController?.playbackSuppressionReason?.let(::playbackSuppressionReasonToString)}, playbackState=${activeController?.playbackState?.let(::playerStateToString)}"
             )
             publishState()
         }
@@ -87,9 +100,9 @@ class PlaybackControllerViewModel(
         }
 
         override fun onEvents(player: Player, events: Player.Events) {
-            Log.d(
+            debugLog(
                 LOG_TAG_CONTROLLER,
-                "Controller onEvents | events=$events, playbackState=${playerStateToString(player.playbackState)}, isPlaying=${player.isPlaying}, current=${safeMediaItemSummary(player.currentMediaItem)}"
+                "Controller onEvents | events=$events, playbackState=${playerStateToString(player.playbackState)}, isPlaying=${player.isPlaying}, playWhenReady=${player.playWhenReady}, suppressionReason=${playbackSuppressionReasonToString(player.playbackSuppressionReason)}, currentPosition=${player.currentPosition}, bufferedPosition=${player.bufferedPosition}, current=${safeMediaItemSummary(player.currentMediaItem)}"
             )
             publishState()
         }
@@ -103,7 +116,7 @@ class PlaybackControllerViewModel(
             {
                 controller = controllerFuture.get().also {
                     it.addListener(listener)
-                    Log.d(
+                    debugLog(
                         LOG_TAG_CONTROLLER,
                         "MediaController connected, current=${safeMediaItemSummary(it.currentMediaItem)}"
                     )
@@ -125,18 +138,22 @@ class PlaybackControllerViewModel(
         ensureServiceStarted()
         val activeController = controller ?: return
         val mediaId = buildStableMediaId(episode, feedUrl)
-        Log.d(
+        debugLog(
             LOG_TAG_CONTROLLER,
             "playEpisode called | playRequestId=$playRequestId, mediaId=$mediaId, title=${episode.title}, audioUrl=${episode.audioUrl}, imageUrl=$artworkUrl, feedUrl=$feedUrl, podcastTitle=$podcastTitle"
         )
 
         val currentUri = activeController.currentMediaItem?.localConfiguration?.uri?.toString()
         if (currentUri == episode.audioUrl) {
-            Log.d(
+            debugLog(
                 LOG_TAG_CONTROLLER,
                 "Requested episode already current -> calling play() | playRequestId=$playRequestId, currentUri=$currentUri"
             )
             activeController.play()
+            debugLog(
+                LOG_TAG_CONTROLLER,
+                "Requested episode already current | after play(): isPlaying=${activeController.isPlaying}, playWhenReady=${activeController.playWhenReady}, playbackState=${playerStateToString(activeController.playbackState)}, suppressionReason=${playbackSuppressionReasonToString(activeController.playbackSuppressionReason)}"
+            )
             return
         }
 
@@ -160,30 +177,62 @@ class PlaybackControllerViewModel(
             .setMediaId(mediaId)
             .setMediaMetadata(mediaMetadata)
             .build()
-        Log.d(
+        debugLog(
             LOG_TAG_CONTROLLER,
             "Built MediaItem | playRequestId=$playRequestId, uri=${mediaItem.localConfiguration?.uri}, mediaId=${mediaItem.mediaId}, metadata=${safeMediaMetadataSummary(mediaItem.mediaMetadata)}"
         )
 
+        debugLog(
+            LOG_TAG_CONTROLLER,
+            "FREEPOD_RESET_SOURCE setMediaItem | playRequestId=$playRequestId, currentBefore=${safeMediaItemSummary(activeController.currentMediaItem)}"
+        )
         activeController.setMediaItem(mediaItem)
-        Log.d(LOG_TAG_CONTROLLER, "setMediaItem() sent to service | playRequestId=$playRequestId")
-        Log.d(LOG_TAG_CONTROLLER, "Calling prepare() | playRequestId=$playRequestId")
+        debugLog(LOG_TAG_CONTROLLER, "setMediaItem() sent to service | playRequestId=$playRequestId")
+        debugLog(LOG_TAG_CONTROLLER, "Calling prepare() | playRequestId=$playRequestId")
         activeController.prepare()
-        Log.d(LOG_TAG_CONTROLLER, "Calling playWhenReady=true | playRequestId=$playRequestId")
+        debugLog(LOG_TAG_CONTROLLER, "Calling playWhenReady=true | playRequestId=$playRequestId")
         activeController.playWhenReady = true
-        Log.d(LOG_TAG_CONTROLLER, "Calling play() | playRequestId=$playRequestId")
+        debugLog(LOG_TAG_CONTROLLER, "Calling play() | playRequestId=$playRequestId")
         activeController.play()
         publishState()
     }
 
     fun togglePlayPause() {
         val activeController = controller ?: return
-        if (activeController.isPlaying) activeController.pause() else activeController.play()
+        debugLog(
+            LOG_TAG_CONTROLLER,
+            "togglePlayPause | before: isPlaying=${activeController.isPlaying}, " +
+                    "playWhenReady=${activeController.playWhenReady}, " +
+                    "playbackState=${playerStateToString(activeController.playbackState)}, " +
+                    "suppressionReason=${activeController.playbackSuppressionReason}"
+        )
+        if (activeController.isPlaying) {
+            debugLog(
+                LOG_TAG_CONTROLLER,
+                "FREEPOD_PAUSE_SOURCE togglePlayPause.pause | current=${activeController.currentPosition}, isPlaying=${activeController.isPlaying}, playWhenReady=${activeController.playWhenReady}, playbackState=${playerStateToString(activeController.playbackState)}"
+            )
+            activeController.pause()
+            debugLog(
+                LOG_TAG_CONTROLLER,
+                "togglePlayPause | after pause(): isPlaying=${activeController.isPlaying}, playWhenReady=${activeController.playWhenReady}, playbackState=${playerStateToString(activeController.playbackState)}, suppressionReason=${playbackSuppressionReasonToString(activeController.playbackSuppressionReason)}"
+            )
+        } else {
+            debugLog(LOG_TAG_CONTROLLER, "togglePlayPause -> play()")
+            activeController.play()
+            debugLog(
+                LOG_TAG_CONTROLLER,
+                "togglePlayPause | after play(): isPlaying=${activeController.isPlaying}, playWhenReady=${activeController.playWhenReady}, playbackState=${playerStateToString(activeController.playbackState)}, suppressionReason=${playbackSuppressionReasonToString(activeController.playbackSuppressionReason)}"
+            )
+        }
     }
 
     fun seekBack() {
         val activeController = controller ?: return
         val target = (activeController.currentPosition - SEEK_MS).coerceAtLeast(0L)
+        debugLog(
+            LOG_TAG_CONTROLLER,
+            "FREEPOD_RESET_SOURCE seekBack.seekTo | target=$target, currentBefore=${activeController.currentPosition}, isPlaying=${activeController.isPlaying}, playWhenReady=${activeController.playWhenReady}, playbackState=${playerStateToString(activeController.playbackState)}"
+        )
         activeController.seekTo(target)
     }
 
@@ -191,11 +240,20 @@ class PlaybackControllerViewModel(
         val activeController = controller ?: return
         val duration = activeController.duration.takeIf { it > 0 } ?: Long.MAX_VALUE
         val target = (activeController.currentPosition + SEEK_MS).coerceAtMost(duration)
+        debugLog(
+            LOG_TAG_CONTROLLER,
+            "FREEPOD_RESET_SOURCE seekForward.seekTo | target=$target, currentBefore=${activeController.currentPosition}, isPlaying=${activeController.isPlaying}, playWhenReady=${activeController.playWhenReady}, playbackState=${playerStateToString(activeController.playbackState)}"
+        )
         activeController.seekTo(target)
     }
 
     fun seekTo(positionMs: Long) {
-        controller?.seekTo(positionMs)
+        val activeController = controller ?: return
+        debugLog(
+            LOG_TAG_CONTROLLER,
+            "FREEPOD_RESET_SOURCE seekTo | target=$positionMs, currentBefore=${activeController.currentPosition}, isPlaying=${activeController.isPlaying}, playWhenReady=${activeController.playWhenReady}, playbackState=${playerStateToString(activeController.playbackState)}"
+        )
+        activeController.seekTo(positionMs)
     }
 
     private fun publishState() {
@@ -240,7 +298,7 @@ class PlaybackControllerViewModel(
 
     private fun ensureServiceStarted() {
         val serviceIntent = Intent(appContext, PlaybackService::class.java)
-        Log.d(LOG_TAG_CONTROLLER, "ensureServiceStarted -> startForegroundService(${PlaybackService::class.java.simpleName})")
+        debugLog(LOG_TAG_CONTROLLER, "ensureServiceStarted -> startForegroundService(${PlaybackService::class.java.simpleName})")
         appContext.startForegroundService(serviceIntent)
     }
 

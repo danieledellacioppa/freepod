@@ -20,6 +20,7 @@ import com.forteur.freepod.ui.screens.MyPodcastsScreen
 import com.forteur.freepod.ui.screens.MyPodcastsViewModel
 import com.forteur.freepod.ui.screens.PodcastDetailScreen
 import com.forteur.freepod.util.LOG_TAG_NAV
+import com.forteur.freepod.util.debugLog
 import com.forteur.freepod.util.newPlayRequestId
 
 private const val DISCOVER_ROUTE = "discover"
@@ -115,7 +116,7 @@ fun FreePodNavHost(
                         feedUrl = feedUrl,
                         playRequestId = playRequestId
                     )
-                    Log.d(
+                    debugLog(
                         LOG_TAG_NAV,
                         "Navigate to player | playRequestId=$playRequestId, title=${episode.title}, mediaSource=MediaController, feedUrl=$feedUrl, podcastTitle=$podcastTitle"
                     )
@@ -132,7 +133,7 @@ fun FreePodNavHost(
         ) { backStackEntry ->
             val playRequestId =
                 Uri.decode(backStackEntry.arguments?.getString(ARG_PLAY_REQUEST_ID).orEmpty())
-            Log.d(
+            debugLog(
                 LOG_TAG_NAV,
                 "Player destination entered | playRequestId=$playRequestId, sourceOfTruth=MediaController, currentMediaId=${playerUiState.currentMediaId}, current=${playerUiState.currentMediaItemSummary}"
             )

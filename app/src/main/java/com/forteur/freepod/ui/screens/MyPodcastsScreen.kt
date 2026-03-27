@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.forteur.freepod.model.SubscribedPodcast
 import com.forteur.freepod.util.LOG_TAG_UI
+import com.forteur.freepod.util.debugLog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -116,7 +117,7 @@ fun MyPodcastsScreen(
                                 modifier = Modifier.size(64.dp),
                                 contentScale = ContentScale.Crop,
                                 onLoading = {
-                                    Log.d(
+                                    debugLog(
                                         LOG_TAG_UI,
                                         "Podcast cover loading | title=${podcast.title}, imageUrl=${podcast.imageUrl}"
                                     )

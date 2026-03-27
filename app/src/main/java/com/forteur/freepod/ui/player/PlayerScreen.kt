@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.forteur.freepod.playback.PlayerUiState
 import com.forteur.freepod.util.LOG_TAG_UI
+import com.forteur.freepod.util.debugLog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,9 +34,9 @@ fun PlayerScreen(
     onSeekForward: () -> Unit,
     onSeekTo: (Long) -> Unit
 ) {
-    Log.d(
+    debugLog(
         LOG_TAG_UI,
-        "PlayerScreen composed | playRequestId=$playRequestId, sourceOfTruth=MediaController, currentMediaId=${playerUiState.currentMediaId}"
+        "PlayerScreen composed | playRequestId=$playRequestId, currentMediaId=${playerUiState.currentMediaId}"
     )
 
     val positionBucket = playerUiState.currentPositionMs / 5_000L
@@ -49,9 +50,9 @@ fun PlayerScreen(
         playerUiState.durationMs,
         positionBucket
     ) {
-        Log.d(
+        debugLog(
             LOG_TAG_UI,
-            "PlayerScreen UI state | playRequestId=$playRequestId, sourceOfTruth=MediaController, isConnected=${playerUiState.isConnected}, playbackState=${playerUiState.playbackState}, isPlaying=${playerUiState.isPlaying}, currentMediaId=${playerUiState.currentMediaId}, currentMedia=${playerUiState.currentMediaItemSummary}, titleShown=${playerUiState.title}, artistShown=${playerUiState.artist}, position=${playerUiState.currentPositionMs}, duration=${playerUiState.durationMs}, positionBucket=${positionBucket * 5}s"
+            "PlayerScreen UI state | playRequestId=$playRequestId, currentMediaId=${playerUiState.currentMediaId}, positionBucket=${positionBucket * 5}s, isPlaying=${playerUiState.isPlaying}, isConnected=${playerUiState.isConnected}, playbackState=${playerUiState.playbackState}"
         )
         if (playerUiState.title.isBlank()) {
             Log.w(
@@ -107,13 +108,40 @@ fun PlayerScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Button(onClick = onSeekBack, enabled = playerUiState.isConnected) {
+                Button(
+                    onClick = {
+                        debugLog(
+                            LOG_TAG_UI,
+                            "FREEPOD_RESET_SOURCE ui.seekBackClick | current=${playerUiState.currentPositionMs}, isPlaying=${playerUiState.isPlaying}, playbackState=${playerUiState.playbackState}"
+                        )
+                        onSeekBack()
+                    },
+                    enabled = playerUiState.isConnected
+                ) {
                     Text("-15s")
                 }
-                Button(onClick = onTogglePlayPause, enabled = playerUiState.isConnected) {
+                Button(
+                    onClick = {
+                        debugLog(
+                            LOG_TAG_UI,
+                            "FREEPOD_PAUSE_SOURCE ui.togglePlayPauseClick | current=${playerUiState.currentPositionMs}, isPlaying=${playerUiState.isPlaying}, playbackState=${playerUiState.playbackState}"
+                        )
+                        onTogglePlayPause()
+                    },
+                    enabled = playerUiState.isConnected
+                ) {
                     Text(if (playerUiState.isPlaying) "Pause" else "Play")
                 }
-                Button(onClick = onSeekForward, enabled = playerUiState.isConnected) {
+                Button(
+                    onClick = {
+                        debugLog(
+                            LOG_TAG_UI,
+                            "FREEPOD_RESET_SOURCE ui.seekForwardClick | current=${playerUiState.currentPositionMs}, isPlaying=${playerUiState.isPlaying}, playbackState=${playerUiState.playbackState}"
+                        )
+                        onSeekForward()
+                    },
+                    enabled = playerUiState.isConnected
+                ) {
                     Text("+15s")
                 }
             }
@@ -121,7 +149,14 @@ fun PlayerScreen(
             Slider(
                 modifier = Modifier.fillMaxWidth(),
                 value = playerUiState.currentPositionMs.toFloat(),
-                onValueChange = { onSeekTo(it.toLong()) },
+                onValueChange = {
+                    val target = it.toLong()
+                    debugLog(
+                        LOG_TAG_UI,
+                        "FREEPOD_RESET_SOURCE ui.sliderSeek | target=$target, currentBefore=${playerUiState.currentPositionMs}, isPlaying=${playerUiState.isPlaying}, playbackState=${playerUiState.playbackState}"
+                    )
+                    onSeekTo(target)
+                },
                 enabled = playerUiState.isConnected,
                 valueRange = 0f..(playerUiState.durationMs.takeIf { it > 0 }?.toFloat() ?: 1f)
             )

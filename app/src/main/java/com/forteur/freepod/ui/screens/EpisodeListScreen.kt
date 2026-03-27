@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.forteur.freepod.model.PodcastEpisode
 import com.forteur.freepod.util.LOG_TAG_UI
+import com.forteur.freepod.util.debugLog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -129,7 +130,7 @@ private fun EpisodeList(
                 episode = episode,
                 onClick = {
                     val mediaId = episode.audioUrl
-                    Log.d(
+                    debugLog(
                         LOG_TAG_UI,
                         "Episode click | title=${episode.title}, audioUrl=${episode.audioUrl}, podcastTitle=$podcastTitle, imageUrl=null, mediaId=$mediaId"
                     )
