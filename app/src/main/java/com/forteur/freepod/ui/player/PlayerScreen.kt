@@ -17,7 +17,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -50,10 +49,20 @@ fun PlayerScreen(
         onStartEpisode(episode, playRequestId)
     }
 
-    SideEffect {
+    val positionBucket = playerUiState.currentPositionMs / 5_000L
+
+    LaunchedEffect(
+        playerUiState.isConnected,
+        playerUiState.playbackState,
+        playerUiState.isPlaying,
+        playerUiState.currentMediaId,
+        playerUiState.title,
+        playerUiState.durationMs,
+        positionBucket
+    ) {
         Log.d(
             LOG_TAG_UI,
-            "PlayerScreen UI state | playRequestId=$playRequestId, isConnected=${playerUiState.isConnected}, playbackState=${playerUiState.playbackState}, isPlaying=${playerUiState.isPlaying}, currentMediaId=${playerUiState.currentMediaId}, currentMedia=${playerUiState.currentMediaItemSummary}, titleShown=${playerUiState.title.ifBlank { episode.title }}, position=${playerUiState.currentPositionMs}, duration=${playerUiState.durationMs}"
+            "PlayerScreen UI state | playRequestId=$playRequestId, isConnected=${playerUiState.isConnected}, playbackState=${playerUiState.playbackState}, isPlaying=${playerUiState.isPlaying}, currentMediaId=${playerUiState.currentMediaId}, currentMedia=${playerUiState.currentMediaItemSummary}, titleShown=${playerUiState.title.ifBlank { episode.title }}, position=${playerUiState.currentPositionMs}, duration=${playerUiState.durationMs}, positionBucket=${positionBucket * 5}s"
         )
         if (playerUiState.title.isBlank() && episode.title.isBlank()) {
             Log.w(
