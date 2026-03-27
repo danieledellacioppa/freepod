@@ -23,6 +23,7 @@ import com.forteur.freepod.util.EXTRA_PODCAST_TITLE
 import com.forteur.freepod.util.LOG_TAG_CONTROLLER
 import com.forteur.freepod.util.debugLog
 import com.forteur.freepod.util.playbackSuppressionReasonToString
+import com.forteur.freepod.util.playWhenReadyChangeReasonToString
 import com.forteur.freepod.util.playerStateToString
 import com.forteur.freepod.util.safeMediaItemSummary
 import com.forteur.freepod.util.safeMediaMetadataSummary
@@ -76,6 +77,15 @@ class PlaybackControllerViewModel(
             debugLog(
                 LOG_TAG_CONTROLLER,
                 "Controller onMediaItemTransition | reason=$reason, item=${safeMediaItemSummary(mediaItem)}"
+            )
+            publishState()
+        }
+
+        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+            val activeController = controller
+            debugLog(
+                LOG_TAG_CONTROLLER,
+                "Controller onPlayWhenReadyChanged | playWhenReady=$playWhenReady, reason=${playWhenReadyChangeReasonToString(reason)}($reason), isPlaying=${activeController?.isPlaying}, suppressionReason=${activeController?.playbackSuppressionReason?.let(::playbackSuppressionReasonToString)}, playbackState=${activeController?.playbackState?.let(::playerStateToString)}"
             )
             publishState()
         }
