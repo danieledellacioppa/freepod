@@ -20,9 +20,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.forteur.freepod.BuildConfig
 import com.forteur.freepod.playback.PlayerUiState
 import com.forteur.freepod.util.LOG_TAG_UI
+import com.forteur.freepod.util.debugLog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,12 +34,10 @@ fun PlayerScreen(
     onSeekForward: () -> Unit,
     onSeekTo: (Long) -> Unit
 ) {
-    if (BuildConfig.DEBUG) {
-        Log.d(
-            LOG_TAG_UI,
-            "PlayerScreen composed | playRequestId=$playRequestId, currentMediaId=${playerUiState.currentMediaId}"
-        )
-    }
+    debugLog(
+        LOG_TAG_UI,
+        "PlayerScreen composed | playRequestId=$playRequestId, currentMediaId=${playerUiState.currentMediaId}"
+    )
 
     val positionBucket = playerUiState.currentPositionMs / 5_000L
 
@@ -52,12 +50,10 @@ fun PlayerScreen(
         playerUiState.durationMs,
         positionBucket
     ) {
-        if (BuildConfig.DEBUG) {
-            Log.d(
-                LOG_TAG_UI,
-                "PlayerScreen UI state | playRequestId=$playRequestId, currentMediaId=${playerUiState.currentMediaId}, positionBucket=${positionBucket * 5}s, isPlaying=${playerUiState.isPlaying}, isConnected=${playerUiState.isConnected}, playbackState=${playerUiState.playbackState}"
-            )
-        }
+        debugLog(
+            LOG_TAG_UI,
+            "PlayerScreen UI state | playRequestId=$playRequestId, currentMediaId=${playerUiState.currentMediaId}, positionBucket=${positionBucket * 5}s, isPlaying=${playerUiState.isPlaying}, isConnected=${playerUiState.isConnected}, playbackState=${playerUiState.playbackState}"
+        )
         if (playerUiState.title.isBlank()) {
             Log.w(
                 LOG_TAG_UI,

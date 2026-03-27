@@ -6,11 +6,12 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.forteur.freepod.data.PodcastRepository
 import com.forteur.freepod.model.PodcastEpisode
+import com.forteur.freepod.util.LOG_TAG_FEED
+import com.forteur.freepod.util.debugLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import com.forteur.freepod.util.LOG_TAG_FEED
 
 data class EpisodeListUiState(
     val podcastTitle: String = "",
@@ -32,7 +33,7 @@ class EpisodeListViewModel(
             Log.e(LOG_TAG_FEED, "loadEpisodes aborted: feedUrl blank | podcastTitle=$podcastTitle")
             return
         }
-        Log.d(LOG_TAG_FEED, "loadEpisodes start | feedUrl=$feedUrl, podcastTitle=$podcastTitle")
+        debugLog(LOG_TAG_FEED, "loadEpisodes start | feedUrl=$feedUrl, podcastTitle=$podcastTitle")
         viewModelScope.launch {
             _uiState.value = EpisodeListUiState(
                 podcastTitle = podcastTitle,
@@ -41,7 +42,7 @@ class EpisodeListViewModel(
             )
             runCatching { repository.fetchEpisodes(feedUrl) }
                 .onSuccess { episodes ->
-                    Log.d(
+                    debugLog(
                         LOG_TAG_FEED,
                         "loadEpisodes success | feedUrl=$feedUrl, podcastTitle=$podcastTitle, episodeCount=${episodes.size}"
                     )

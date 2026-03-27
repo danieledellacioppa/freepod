@@ -1,9 +1,11 @@
 package com.forteur.freepod.util
 
 import android.os.Bundle
+import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
+import com.forteur.freepod.BuildConfig
 import java.util.UUID
 
 const val LOG_TAG_NAV = "FREEPOD_NAV"
@@ -42,4 +44,10 @@ fun bundleSummary(bundle: Bundle?): String {
     if (bundle == null) return "extras=null"
     val keys = bundle.keySet().joinToString(",")
     return "extrasKeys=[$keys], playRequestId=${bundle.getString(EXTRA_PLAY_REQUEST_ID)}"
+}
+
+fun debugLog(tag: String, message: String) {
+    if (BuildConfig.DEBUG) {
+        Log.d(tag, message)
+    }
 }

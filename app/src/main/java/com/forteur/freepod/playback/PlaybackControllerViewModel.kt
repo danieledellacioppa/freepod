@@ -21,6 +21,7 @@ import com.forteur.freepod.util.EXTRA_IMAGE_URL
 import com.forteur.freepod.util.EXTRA_PLAY_REQUEST_ID
 import com.forteur.freepod.util.EXTRA_PODCAST_TITLE
 import com.forteur.freepod.util.LOG_TAG_CONTROLLER
+import com.forteur.freepod.util.debugLog
 import com.forteur.freepod.util.playerStateToString
 import com.forteur.freepod.util.safeMediaItemSummary
 import com.forteur.freepod.util.safeMediaMetadataSummary
@@ -54,7 +55,7 @@ class PlaybackControllerViewModel(
 
     private val listener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {
-            Log.d(
+            debugLog(
                 LOG_TAG_CONTROLLER,
                 "Controller onPlaybackStateChanged | state=${playerStateToString(playbackState)}($playbackState), current=${safeMediaItemSummary(controller?.currentMediaItem)}"
             )
@@ -62,7 +63,7 @@ class PlaybackControllerViewModel(
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
-            Log.d(
+            debugLog(
                 LOG_TAG_CONTROLLER,
                 "Controller onIsPlayingChanged | isPlaying=$isPlaying, playbackState=${controller?.playbackState?.let(::playerStateToString)}"
             )
@@ -70,7 +71,7 @@ class PlaybackControllerViewModel(
         }
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-            Log.d(
+            debugLog(
                 LOG_TAG_CONTROLLER,
                 "Controller onMediaItemTransition | reason=$reason, item=${safeMediaItemSummary(mediaItem)}"
             )
@@ -87,7 +88,7 @@ class PlaybackControllerViewModel(
         }
 
         override fun onEvents(player: Player, events: Player.Events) {
-            Log.d(
+            debugLog(
                 LOG_TAG_CONTROLLER,
                 "Controller onEvents | events=$events, playbackState=${playerStateToString(player.playbackState)}, isPlaying=${player.isPlaying}, current=${safeMediaItemSummary(player.currentMediaItem)}"
             )
@@ -103,7 +104,7 @@ class PlaybackControllerViewModel(
             {
                 controller = controllerFuture.get().also {
                     it.addListener(listener)
-                    Log.d(
+                    debugLog(
                         LOG_TAG_CONTROLLER,
                         "MediaController connected, current=${safeMediaItemSummary(it.currentMediaItem)}"
                     )
@@ -125,14 +126,14 @@ class PlaybackControllerViewModel(
         ensureServiceStarted()
         val activeController = controller ?: return
         val mediaId = buildStableMediaId(episode, feedUrl)
-        Log.d(
+        debugLog(
             LOG_TAG_CONTROLLER,
             "playEpisode called | playRequestId=$playRequestId, mediaId=$mediaId, title=${episode.title}, audioUrl=${episode.audioUrl}, imageUrl=$artworkUrl, feedUrl=$feedUrl, podcastTitle=$podcastTitle"
         )
 
         val currentUri = activeController.currentMediaItem?.localConfiguration?.uri?.toString()
         if (currentUri == episode.audioUrl) {
-            Log.d(
+            debugLog(
                 LOG_TAG_CONTROLLER,
                 "Requested episode already current -> calling play() | playRequestId=$playRequestId, currentUri=$currentUri"
             )
@@ -160,18 +161,18 @@ class PlaybackControllerViewModel(
             .setMediaId(mediaId)
             .setMediaMetadata(mediaMetadata)
             .build()
-        Log.d(
+        debugLog(
             LOG_TAG_CONTROLLER,
             "Built MediaItem | playRequestId=$playRequestId, uri=${mediaItem.localConfiguration?.uri}, mediaId=${mediaItem.mediaId}, metadata=${safeMediaMetadataSummary(mediaItem.mediaMetadata)}"
         )
 
         activeController.setMediaItem(mediaItem)
-        Log.d(LOG_TAG_CONTROLLER, "setMediaItem() sent to service | playRequestId=$playRequestId")
-        Log.d(LOG_TAG_CONTROLLER, "Calling prepare() | playRequestId=$playRequestId")
+        debugLog(LOG_TAG_CONTROLLER, "setMediaItem() sent to service | playRequestId=$playRequestId")
+        debugLog(LOG_TAG_CONTROLLER, "Calling prepare() | playRequestId=$playRequestId")
         activeController.prepare()
-        Log.d(LOG_TAG_CONTROLLER, "Calling playWhenReady=true | playRequestId=$playRequestId")
+        debugLog(LOG_TAG_CONTROLLER, "Calling playWhenReady=true | playRequestId=$playRequestId")
         activeController.playWhenReady = true
-        Log.d(LOG_TAG_CONTROLLER, "Calling play() | playRequestId=$playRequestId")
+        debugLog(LOG_TAG_CONTROLLER, "Calling play() | playRequestId=$playRequestId")
         activeController.play()
         publishState()
     }
@@ -240,7 +241,7 @@ class PlaybackControllerViewModel(
 
     private fun ensureServiceStarted() {
         val serviceIntent = Intent(appContext, PlaybackService::class.java)
-        Log.d(LOG_TAG_CONTROLLER, "ensureServiceStarted -> startForegroundService(${PlaybackService::class.java.simpleName})")
+        debugLog(LOG_TAG_CONTROLLER, "ensureServiceStarted -> startForegroundService(${PlaybackService::class.java.simpleName})")
         appContext.startForegroundService(serviceIntent)
     }
 

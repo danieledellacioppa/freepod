@@ -12,6 +12,7 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.forteur.freepod.util.LOG_TAG_SERVICE
 import com.forteur.freepod.util.bundleSummary
+import com.forteur.freepod.util.debugLog
 import com.forteur.freepod.util.playerStateToString
 import com.forteur.freepod.util.safeMediaItemSummary
 
@@ -21,21 +22,21 @@ class PlaybackService : MediaSessionService() {
     private var mediaSession: MediaSession? = null
     private val playerListener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {
-            Log.d(
+            debugLog(
                 LOG_TAG_SERVICE,
                 "Service player onPlaybackStateChanged | state=${playerStateToString(playbackState)}($playbackState), current=${safeMediaItemSummary(player?.currentMediaItem)}"
             )
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
-            Log.d(
+            debugLog(
                 LOG_TAG_SERVICE,
                 "Service player onIsPlayingChanged | isPlaying=$isPlaying, playbackState=${player?.playbackState?.let(::playerStateToString)}"
             )
         }
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-            Log.d(
+            debugLog(
                 LOG_TAG_SERVICE,
                 "Service player onMediaItemTransition | reason=$reason, item=${safeMediaItemSummary(mediaItem)}"
             )
@@ -50,7 +51,7 @@ class PlaybackService : MediaSessionService() {
         }
 
         override fun onEvents(player: Player, events: Player.Events) {
-            Log.d(
+            debugLog(
                 LOG_TAG_SERVICE,
                 "Service player onEvents | events=$events, playbackState=${playerStateToString(player.playbackState)}, isPlaying=${player.isPlaying}, current=${safeMediaItemSummary(player.currentMediaItem)}, ${bundleSummary(player.currentMediaItem?.mediaMetadata?.extras)}"
             )
@@ -59,7 +60,7 @@ class PlaybackService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate()
-        Log.d(LOG_TAG_SERVICE, "onCreate")
+        debugLog(LOG_TAG_SERVICE, "onCreate")
 
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(C.USAGE_MEDIA)
@@ -73,18 +74,18 @@ class PlaybackService : MediaSessionService() {
             .build()
             .also {
                 it.addListener(playerListener)
-                Log.d(LOG_TAG_SERVICE, "ExoPlayer initialized")
+                debugLog(LOG_TAG_SERVICE, "ExoPlayer initialized")
             }
 
         mediaSession = MediaSession.Builder(this, requireNotNull(player))
             .build()
             .also {
-                Log.d(LOG_TAG_SERVICE, "MediaSession initialized")
+                debugLog(LOG_TAG_SERVICE, "MediaSession initialized")
             }
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? {
-        Log.d(
+        debugLog(
             LOG_TAG_SERVICE,
             "onGetSession | packageName=${controllerInfo.packageName}, controllerVersion=${controllerInfo.controllerVersion}"
         )
@@ -99,7 +100,7 @@ class PlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
-        Log.d(LOG_TAG_SERVICE, "onDestroy")
+        debugLog(LOG_TAG_SERVICE, "onDestroy")
         mediaSession?.run {
             player.removeListener(playerListener)
             player.release()
