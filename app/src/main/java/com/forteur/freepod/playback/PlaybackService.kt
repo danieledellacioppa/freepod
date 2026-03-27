@@ -14,6 +14,7 @@ import com.forteur.freepod.util.LOG_TAG_SERVICE
 import com.forteur.freepod.util.bundleSummary
 import com.forteur.freepod.util.debugLog
 import com.forteur.freepod.util.playbackSuppressionReasonToString
+import com.forteur.freepod.util.playWhenReadyChangeReasonToString
 import com.forteur.freepod.util.playerStateToString
 import com.forteur.freepod.util.safeMediaItemSummary
 
@@ -41,6 +42,14 @@ class PlaybackService : MediaSessionService() {
             debugLog(
                 LOG_TAG_SERVICE,
                 "Service player onMediaItemTransition | reason=$reason, item=${safeMediaItemSummary(mediaItem)}"
+            )
+        }
+
+        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+            val activePlayer = player
+            debugLog(
+                LOG_TAG_SERVICE,
+                "Service player onPlayWhenReadyChanged | playWhenReady=$playWhenReady, reason=${playWhenReadyChangeReasonToString(reason)}($reason), isPlaying=${activePlayer?.isPlaying}, suppressionReason=${activePlayer?.playbackSuppressionReason?.let(::playbackSuppressionReasonToString)}, playbackState=${activePlayer?.playbackState?.let(::playerStateToString)}"
             )
         }
 
@@ -110,7 +119,15 @@ class PlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
-        debugLog(LOG_TAG_SERVICE, "onDestroy")
+        val activePlayer = player
+        if (activePlayer != null) {
+            debugLog(
+                LOG_TAG_SERVICE,
+                "FREEPOD_PAUSE_SOURCE service.onDestroy.releasePlayer | current=${activePlayer.currentPosition}, isPlaying=${activePlayer.isPlaying}, playWhenReady=${activePlayer.playWhenReady}, suppressionReason=${playbackSuppressionReasonToString(activePlayer.playbackSuppressionReason)}, playbackState=${playerStateToString(activePlayer.playbackState)}"
+            )
+        } else {
+            debugLog(LOG_TAG_SERVICE, "onDestroy | player already null")
+        }
         mediaSession?.run {
             player.removeListener(playerListener)
             player.release()

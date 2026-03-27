@@ -37,6 +37,16 @@ fun playbackSuppressionReasonToString(reason: Int): String = when (reason) {
     else -> "UNKNOWN($reason)"
 }
 
+fun playWhenReadyChangeReasonToString(reason: Int): String = when (reason) {
+    Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST -> "USER_REQUEST"
+    Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_FOCUS_LOSS -> "AUDIO_FOCUS_LOSS"
+    Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_BECOMING_NOISY -> "AUDIO_BECOMING_NOISY"
+    Player.PLAY_WHEN_READY_CHANGE_REASON_REMOTE -> "REMOTE"
+    Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM -> "END_OF_MEDIA_ITEM"
+    Player.PLAY_WHEN_READY_CHANGE_REASON_SUPPRESSED_TOO_LONG -> "SUPPRESSED_TOO_LONG"
+    else -> "UNKNOWN($reason)"
+}
+
 fun safeMediaMetadataSummary(metadata: MediaMetadata?): String {
     if (metadata == null) return "metadata=null"
     val description = metadata.description?.toString().orEmpty()
