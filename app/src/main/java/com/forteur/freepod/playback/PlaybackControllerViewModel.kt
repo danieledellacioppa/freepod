@@ -103,7 +103,7 @@ class PlaybackControllerViewModel(
                     it.addListener(listener)
                     Log.d(
                         LOG_TAG_CONTROLLER,
-                        "MediaController connected | sessionToken=${it.sessionToken}, current=${safeMediaItemSummary(it.currentMediaItem)}"
+                        "MediaController connected, current=${safeMediaItemSummary(it.currentMediaItem)}"
                     )
                     publishState()
                     startPositionUpdates()
