@@ -179,7 +179,20 @@ class PlaybackControllerViewModel(
 
     fun togglePlayPause() {
         val activeController = controller ?: return
-        if (activeController.isPlaying) activeController.pause() else activeController.play()
+        debugLog(
+            LOG_TAG_CONTROLLER,
+            "togglePlayPause | before: isPlaying=${activeController.isPlaying}, " +
+                    "playWhenReady=${activeController.playWhenReady}, " +
+                    "playbackState=${playerStateToString(activeController.playbackState)}, " +
+                    "suppressionReason=${activeController.playbackSuppressionReason}"
+        )
+        if (activeController.isPlaying) {
+            debugLog(LOG_TAG_CONTROLLER, "togglePlayPause -> pause()")
+            activeController.pause()
+        } else {
+            debugLog(LOG_TAG_CONTROLLER, "togglePlayPause -> play()")
+            activeController.play()
+        }
     }
 
     fun seekBack() {
