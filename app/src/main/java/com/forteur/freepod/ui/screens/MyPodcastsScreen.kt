@@ -1,5 +1,6 @@
 package com.forteur.freepod.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,6 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.forteur.freepod.model.SubscribedPodcast
+import com.forteur.freepod.util.LOG_TAG_UI
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,7 +71,19 @@ fun MyPodcastsScreen(
                                 model = podcast.imageUrl,
                                 contentDescription = podcast.title,
                                 modifier = Modifier.size(64.dp),
-                                contentScale = ContentScale.Crop
+                                contentScale = ContentScale.Crop,
+                                onLoading = {
+                                    Log.d(
+                                        LOG_TAG_UI,
+                                        "Podcast cover loading | title=${podcast.title}, imageUrl=${podcast.imageUrl}"
+                                    )
+                                },
+                                onError = {
+                                    Log.w(
+                                        LOG_TAG_UI,
+                                        "Podcast cover load failed (audio playback unaffected) | title=${podcast.title}, imageUrl=${podcast.imageUrl}"
+                                    )
+                                }
                             )
                             Column(modifier = Modifier.padding(start = 12.dp)) {
                                 Text(

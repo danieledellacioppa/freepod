@@ -1,5 +1,6 @@
 package com.forteur.freepod.ui.player
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,20 +22,57 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.forteur.freepod.model.PodcastEpisode
 import com.forteur.freepod.playback.PlayerUiState
+import com.forteur.freepod.util.LOG_TAG_UI
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlayerScreen(
     episode: PodcastEpisode,
+    playRequestId: String,
     playerUiState: PlayerUiState,
-    onStartEpisode: (PodcastEpisode) -> Unit,
+    onStartEpisode: (PodcastEpisode, String) -> Unit,
     onTogglePlayPause: () -> Unit,
     onSeekBack: () -> Unit,
     onSeekForward: () -> Unit,
     onSeekTo: (Long) -> Unit
 ) {
+    Log.d(
+        LOG_TAG_UI,
+        "PlayerScreen composed | playRequestId=$playRequestId, selectedEpisodeTitle=${episode.title}, selectedEpisodeAudioUrl=${episode.audioUrl}"
+    )
+
     LaunchedEffect(episode.audioUrl) {
-        onStartEpisode(episode)
+        Log.d(
+            LOG_TAG_UI,
+            "PlayerScreen LaunchedEffect -> onStartEpisode | playRequestId=$playRequestId, episodeTitle=${episode.title}, audioUrl=${episode.audioUrl}, imageUrl=null"
+        )
+        onStartEpisode(episode, playRequestId)
+    }
+
+    val positionBucket = playerUiState.currentPositionMs / 5_000L
+
+    LaunchedEffect(
+        playerUiState.isConnected,
+        playerUiState.playbackState,
+        playerUiState.isPlaying,
+        playerUiState.currentMediaId,
+        playerUiState.title,
+        playerUiState.durationMs,
+        positionBucket
+    ) {
+        Log.d(
+            LOG_TAG_UI,
+            "PlayerScreen UI state | playRequestId=$playRequestId, isConnected=${playerUiState.isConnected}, playbackState=${playerUiState.playbackState}, isPlaying=${playerUiState.isPlaying}, currentMediaId=${playerUiState.currentMediaId}, currentMedia=${playerUiState.currentMediaItemSummary}, titleShown=${playerUiState.title.ifBlank { episode.title }}, position=${playerUiState.currentPositionMs}, duration=${playerUiState.durationMs}, positionBucket=${positionBucket * 5}s"
+        )
+        if (playerUiState.title.isBlank() && episode.title.isBlank()) {
+            Log.w(
+                LOG_TAG_UI,
+                "PlayerScreen metadata missing -> possible empty UI | playRequestId=$playRequestId"
+            )
+        }
+        if (!playerUiState.isConnected) {
+            Log.w(LOG_TAG_UI, "PlayerScreen controller not available yet | playRequestId=$playRequestId")
+        }
     }
 
     Scaffold(

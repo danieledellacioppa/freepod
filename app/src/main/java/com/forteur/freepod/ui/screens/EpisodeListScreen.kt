@@ -1,5 +1,6 @@
 package com.forteur.freepod.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.forteur.freepod.model.PodcastEpisode
+import com.forteur.freepod.util.LOG_TAG_UI
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,6 +56,7 @@ fun EpisodeListScreen(
             )
             else -> EpisodeList(
                 episodes = uiState.episodes,
+                podcastTitle = uiState.podcastTitle,
                 onEpisodeClick = onEpisodeClick,
                 innerPadding = innerPadding
             )
@@ -107,6 +110,7 @@ private fun ErrorState(
 @Composable
 private fun EpisodeList(
     episodes: List<PodcastEpisode>,
+    podcastTitle: String,
     onEpisodeClick: (PodcastEpisode) -> Unit,
     innerPadding: PaddingValues
 ) {
@@ -123,7 +127,14 @@ private fun EpisodeList(
         items(episodes, key = { it.audioUrl }) { episode ->
             EpisodeCard(
                 episode = episode,
-                onClick = { onEpisodeClick(episode) }
+                onClick = {
+                    val mediaId = episode.audioUrl
+                    Log.d(
+                        LOG_TAG_UI,
+                        "Episode click | title=${episode.title}, audioUrl=${episode.audioUrl}, podcastTitle=$podcastTitle, imageUrl=null, mediaId=$mediaId"
+                    )
+                    onEpisodeClick(episode)
+                }
             )
         }
     }
