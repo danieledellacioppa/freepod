@@ -108,13 +108,40 @@ fun PlayerScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Button(onClick = onSeekBack, enabled = playerUiState.isConnected) {
+                Button(
+                    onClick = {
+                        debugLog(
+                            LOG_TAG_UI,
+                            "FREEPOD_RESET_SOURCE ui.seekBackClick | current=${playerUiState.currentPositionMs}, isPlaying=${playerUiState.isPlaying}, playbackState=${playerUiState.playbackState}"
+                        )
+                        onSeekBack()
+                    },
+                    enabled = playerUiState.isConnected
+                ) {
                     Text("-15s")
                 }
-                Button(onClick = onTogglePlayPause, enabled = playerUiState.isConnected) {
+                Button(
+                    onClick = {
+                        debugLog(
+                            LOG_TAG_UI,
+                            "FREEPOD_PAUSE_SOURCE ui.togglePlayPauseClick | current=${playerUiState.currentPositionMs}, isPlaying=${playerUiState.isPlaying}, playbackState=${playerUiState.playbackState}"
+                        )
+                        onTogglePlayPause()
+                    },
+                    enabled = playerUiState.isConnected
+                ) {
                     Text(if (playerUiState.isPlaying) "Pause" else "Play")
                 }
-                Button(onClick = onSeekForward, enabled = playerUiState.isConnected) {
+                Button(
+                    onClick = {
+                        debugLog(
+                            LOG_TAG_UI,
+                            "FREEPOD_RESET_SOURCE ui.seekForwardClick | current=${playerUiState.currentPositionMs}, isPlaying=${playerUiState.isPlaying}, playbackState=${playerUiState.playbackState}"
+                        )
+                        onSeekForward()
+                    },
+                    enabled = playerUiState.isConnected
+                ) {
                     Text("+15s")
                 }
             }
@@ -122,7 +149,14 @@ fun PlayerScreen(
             Slider(
                 modifier = Modifier.fillMaxWidth(),
                 value = playerUiState.currentPositionMs.toFloat(),
-                onValueChange = { onSeekTo(it.toLong()) },
+                onValueChange = {
+                    val target = it.toLong()
+                    debugLog(
+                        LOG_TAG_UI,
+                        "FREEPOD_RESET_SOURCE ui.sliderSeek | target=$target, currentBefore=${playerUiState.currentPositionMs}, isPlaying=${playerUiState.isPlaying}, playbackState=${playerUiState.playbackState}"
+                    )
+                    onSeekTo(target)
+                },
                 enabled = playerUiState.isConnected,
                 valueRange = 0f..(playerUiState.durationMs.takeIf { it > 0 }?.toFloat() ?: 1f)
             )
