@@ -3,6 +3,9 @@ package com.forteur.freepod.playback
 import android.app.Application
 import android.content.ComponentName
 import android.content.Intent
+import android.net.Uri
+import android.os.Bundle
+import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -13,12 +16,21 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.forteur.freepod.model.PodcastEpisode
+import com.forteur.freepod.util.EXTRA_FEED_URL
+import com.forteur.freepod.util.EXTRA_IMAGE_URL
+import com.forteur.freepod.util.EXTRA_PLAY_REQUEST_ID
+import com.forteur.freepod.util.EXTRA_PODCAST_TITLE
+import com.forteur.freepod.util.LOG_TAG_CONTROLLER
+import com.forteur.freepod.util.playerStateToString
+import com.forteur.freepod.util.safeMediaItemSummary
+import com.forteur.freepod.util.safeMediaMetadataSummary
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.security.MessageDigest
 import java.util.concurrent.Executor
 
 private const val SEEK_MS = 15_000L
@@ -41,7 +53,44 @@ class PlaybackControllerViewModel(
     private var positionJob: Job? = null
 
     private val listener = object : Player.Listener {
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            Log.d(
+                LOG_TAG_CONTROLLER,
+                "Controller onPlaybackStateChanged | state=${playerStateToString(playbackState)}($playbackState), current=${safeMediaItemSummary(controller?.currentMediaItem)}"
+            )
+            publishState()
+        }
+
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            Log.d(
+                LOG_TAG_CONTROLLER,
+                "Controller onIsPlayingChanged | isPlaying=$isPlaying, playbackState=${controller?.playbackState?.let(::playerStateToString)}"
+            )
+            publishState()
+        }
+
+        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            Log.d(
+                LOG_TAG_CONTROLLER,
+                "Controller onMediaItemTransition | reason=$reason, item=${safeMediaItemSummary(mediaItem)}"
+            )
+            publishState()
+        }
+
+        override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+            Log.e(
+                LOG_TAG_CONTROLLER,
+                "Controller onPlayerError | code=${error.errorCodeName}, message=${error.message}",
+                error
+            )
+            publishState()
+        }
+
         override fun onEvents(player: Player, events: Player.Events) {
+            Log.d(
+                LOG_TAG_CONTROLLER,
+                "Controller onEvents | events=$events, playbackState=${playerStateToString(player.playbackState)}, isPlaying=${player.isPlaying}, current=${safeMediaItemSummary(player.currentMediaItem)}"
+            )
             publishState()
         }
     }
@@ -54,6 +103,10 @@ class PlaybackControllerViewModel(
             {
                 controller = controllerFuture.get().also {
                     it.addListener(listener)
+                    Log.d(
+                        LOG_TAG_CONTROLLER,
+                        "MediaController connected, current=${safeMediaItemSummary(it.currentMediaItem)}"
+                    )
                     publishState()
                     startPositionUpdates()
                 }
@@ -62,32 +115,63 @@ class PlaybackControllerViewModel(
         )
     }
 
-    fun playEpisode(episode: PodcastEpisode) {
+    fun playEpisode(
+        episode: PodcastEpisode,
+        podcastTitle: String,
+        feedUrl: String,
+        playRequestId: String,
+        artworkUrl: String? = null
+    ) {
         ensureServiceStarted()
         val activeController = controller ?: return
+        val mediaId = buildStableMediaId(episode, feedUrl)
+        Log.d(
+            LOG_TAG_CONTROLLER,
+            "playEpisode called | playRequestId=$playRequestId, mediaId=$mediaId, title=${episode.title}, audioUrl=${episode.audioUrl}, imageUrl=$artworkUrl, feedUrl=$feedUrl, podcastTitle=$podcastTitle"
+        )
 
         val currentUri = activeController.currentMediaItem?.localConfiguration?.uri?.toString()
         if (currentUri == episode.audioUrl) {
+            Log.d(
+                LOG_TAG_CONTROLLER,
+                "Requested episode already current -> calling play() | playRequestId=$playRequestId, currentUri=$currentUri"
+            )
             activeController.play()
             return
         }
 
-        activeController.setMediaItem(
-            MediaItem.Builder()
-                .setUri(episode.audioUrl)
-                .setMediaId(episode.audioUrl)
-                .setMediaMetadata(
-                    androidx.media3.common.MediaMetadata.Builder()
-                        .setTitle(episode.title)
-                        .setArtist("Easy Catalan")
-                        .setAlbumTitle("FreePod")
-                        .setDescription(episode.description)
-                        .build()
-                )
-                .build()
+        val mediaMetadata = androidx.media3.common.MediaMetadata.Builder()
+            .setTitle(episode.title)
+            .setArtist(podcastTitle.ifBlank { "FreePod" })
+            .setAlbumTitle(podcastTitle.ifBlank { "FreePod" })
+            .setDescription(episode.description)
+            .setArtworkUri(artworkUrl?.let(Uri::parse))
+            .setExtras(
+                Bundle().apply {
+                    putString(EXTRA_PLAY_REQUEST_ID, playRequestId)
+                    putString(EXTRA_FEED_URL, feedUrl)
+                    putString(EXTRA_PODCAST_TITLE, podcastTitle)
+                    putString(EXTRA_IMAGE_URL, artworkUrl)
+                }
+            )
+            .build()
+        val mediaItem = MediaItem.Builder()
+            .setUri(episode.audioUrl)
+            .setMediaId(mediaId)
+            .setMediaMetadata(mediaMetadata)
+            .build()
+        Log.d(
+            LOG_TAG_CONTROLLER,
+            "Built MediaItem | playRequestId=$playRequestId, uri=${mediaItem.localConfiguration?.uri}, mediaId=${mediaItem.mediaId}, metadata=${safeMediaMetadataSummary(mediaItem.mediaMetadata)}"
         )
+
+        activeController.setMediaItem(mediaItem)
+        Log.d(LOG_TAG_CONTROLLER, "setMediaItem() sent to service | playRequestId=$playRequestId")
+        Log.d(LOG_TAG_CONTROLLER, "Calling prepare() | playRequestId=$playRequestId")
         activeController.prepare()
+        Log.d(LOG_TAG_CONTROLLER, "Calling playWhenReady=true | playRequestId=$playRequestId")
         activeController.playWhenReady = true
+        Log.d(LOG_TAG_CONTROLLER, "Calling play() | playRequestId=$playRequestId")
         activeController.play()
         publishState()
     }
@@ -124,11 +208,24 @@ class PlaybackControllerViewModel(
         _uiState.value = PlayerUiState(
             isConnected = true,
             isPlaying = activeController.isPlaying,
+            playbackState = playerStateToString(activeController.playbackState),
             currentPositionMs = activeController.currentPosition.coerceAtLeast(0L),
             durationMs = activeController.duration.takeIf { it > 0 } ?: 0L,
             title = activeController.mediaMetadata.title?.toString().orEmpty(),
-            description = activeController.mediaMetadata.description?.toString()
+            artist = activeController.mediaMetadata.artist?.toString(),
+            description = activeController.mediaMetadata.description?.toString(),
+            artworkUri = activeController.mediaMetadata.artworkUri?.toString(),
+            currentMediaId = activeController.currentMediaItem?.mediaId,
+            currentMediaItemSummary = safeMediaItemSummary(activeController.currentMediaItem)
         )
+    }
+
+    private fun buildStableMediaId(episode: PodcastEpisode, feedUrl: String): String {
+        val key = listOf(feedUrl, episode.title, episode.pubDateRaw, episode.audioUrl).joinToString("|")
+        val digest = MessageDigest.getInstance("SHA-256")
+            .digest(key.toByteArray())
+            .joinToString("") { "%02x".format(it) }
+        return "episode-$digest"
     }
 
     private fun startPositionUpdates() {
@@ -143,6 +240,7 @@ class PlaybackControllerViewModel(
 
     private fun ensureServiceStarted() {
         val serviceIntent = Intent(appContext, PlaybackService::class.java)
+        Log.d(LOG_TAG_CONTROLLER, "ensureServiceStarted -> startForegroundService(${PlaybackService::class.java.simpleName})")
         appContext.startForegroundService(serviceIntent)
     }
 
@@ -169,8 +267,13 @@ class PlaybackControllerViewModel(
 data class PlayerUiState(
     val isConnected: Boolean = false,
     val isPlaying: Boolean = false,
+    val playbackState: String = "IDLE",
     val currentPositionMs: Long = 0L,
     val durationMs: Long = 0L,
     val title: String = "",
-    val description: String? = null
+    val artist: String? = null,
+    val description: String? = null,
+    val artworkUri: String? = null,
+    val currentMediaId: String? = null,
+    val currentMediaItemSummary: String = "mediaItem=null"
 )

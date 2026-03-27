@@ -12,9 +12,9 @@ import java.io.IOException
 
 class PodcastIndexService(
     private val client: OkHttpClient
-) {
+) : PodcastDiscoveryService {
 
-    suspend fun trendingPodcasts(maxResults: Int = 30): List<PodcastSummary> = withContext(Dispatchers.IO) {
+    override suspend fun trendingPodcasts(maxResults: Int): List<PodcastSummary> = withContext(Dispatchers.IO) {
         val url = "${PodcastIndexConfig.BASE_URL}/podcasts/trending"
             .toHttpUrl()
             .newBuilder()
@@ -24,7 +24,7 @@ class PodcastIndexService(
         executePodcastListRequest(url.toString())
     }
 
-    suspend fun searchPodcasts(query: String, maxResults: Int = 30): List<PodcastSummary> = withContext(Dispatchers.IO) {
+    override suspend fun searchPodcasts(query: String, maxResults: Int): List<PodcastSummary> = withContext(Dispatchers.IO) {
         val url = "${PodcastIndexConfig.BASE_URL}/search/byterm"
             .toHttpUrl()
             .newBuilder()

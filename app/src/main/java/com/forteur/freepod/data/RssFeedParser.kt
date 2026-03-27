@@ -1,7 +1,9 @@
 package com.forteur.freepod.data
 
+import android.util.Log
 import android.util.Xml
 import com.forteur.freepod.model.PodcastEpisode
+import com.forteur.freepod.util.LOG_TAG_FEED
 import com.forteur.freepod.util.stripHtml
 import org.xmlpull.v1.XmlPullParser
 import java.io.InputStream
@@ -21,6 +23,7 @@ class RssFeedParser {
         var currentPubDate: String? = null
         var currentAudioUrl: String? = null
         var currentDuration: String? = null
+        var itemIndex = 0
         var insideItem = false
 
         while (eventType != XmlPullParser.END_DOCUMENT) {
@@ -29,6 +32,7 @@ class RssFeedParser {
                     when (parser.name) {
                         "item" -> {
                             insideItem = true
+                            itemIndex += 1
                             currentTitle = null
                             currentDescription = null
                             currentPubDate = null
@@ -43,6 +47,12 @@ class RssFeedParser {
                         "pubDate" -> if (insideItem) currentPubDate = readMixedContentText(parser)
                         "enclosure" -> if (insideItem) {
                             currentAudioUrl = parser.getAttributeValue(null, "url")?.trim()
+                            if (currentAudioUrl.isNullOrBlank()) {
+                                Log.w(
+                                    LOG_TAG_FEED,
+                                    "RSS item[$itemIndex] has missing/blank enclosure url"
+                                )
+                            }
                         }
                         "itunes:duration", "duration" -> if (insideItem) {
                             currentDuration = readMixedContentText(parser)
@@ -54,7 +64,16 @@ class RssFeedParser {
                     if (parser.name == "item") {
                         insideItem = false
                         val audioUrl = currentAudioUrl
+                        if (currentTitle.isNullOrBlank()) {
+                            Log.w(LOG_TAG_FEED, "RSS item[$itemIndex] missing title")
+                        }
                         if (!audioUrl.isNullOrBlank()) {
+                            if (!audioUrl.startsWith("http", ignoreCase = true)) {
+                                Log.w(
+                                    LOG_TAG_FEED,
+                                    "RSS item[$itemIndex] enclosure looks invalid | audioUrl=$audioUrl"
+                                )
+                            }
                             episodes.add(
                                 PodcastEpisode(
                                     title = currentTitle?.ifBlank { "Untitled episode" }
@@ -64,6 +83,11 @@ class RssFeedParser {
                                     audioUrl = audioUrl,
                                     duration = currentDuration
                                 )
+                            )
+                        } else {
+                            Log.e(
+                                LOG_TAG_FEED,
+                                "RSS item[$itemIndex] skipped due to missing audioUrl | title=${currentTitle.orEmpty()}"
                             )
                         }
                     }

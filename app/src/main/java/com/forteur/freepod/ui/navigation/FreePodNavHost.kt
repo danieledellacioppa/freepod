@@ -1,6 +1,7 @@
 package com.forteur.freepod.ui.navigation
 
 import android.net.Uri
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -18,6 +19,8 @@ import com.forteur.freepod.ui.screens.EpisodeListViewModel
 import com.forteur.freepod.ui.screens.MyPodcastsScreen
 import com.forteur.freepod.ui.screens.MyPodcastsViewModel
 import com.forteur.freepod.ui.screens.PodcastDetailScreen
+import com.forteur.freepod.util.LOG_TAG_NAV
+import com.forteur.freepod.util.newPlayRequestId
 
 private const val DISCOVER_ROUTE = "discover"
 private const val PODCAST_DETAIL_ROUTE = "podcastDetail"
@@ -26,7 +29,7 @@ private const val EPISODES_ROUTE = "episodes"
 private const val PLAYER_ROUTE = "player"
 private const val ARG_FEED_URL = "feedUrl"
 private const val ARG_PODCAST_TITLE = "podcastTitle"
-private const val ARG_AUDIO_URL = "audioUrl"
+private const val ARG_PLAY_REQUEST_ID = "playRequestId"
 
 @Composable
 fun FreePodNavHost(
@@ -102,29 +105,43 @@ fun FreePodNavHost(
                 uiState = episodesUiState,
                 onRetry = { episodeListViewModel.loadEpisodes(feedUrl, podcastTitle) },
                 onEpisodeClick = { episode ->
-                    navController.navigate("$PLAYER_ROUTE/${Uri.encode(episode.audioUrl)}")
+                    val playRequestId = newPlayRequestId()
+                    playbackControllerViewModel.playEpisode(
+                        episode = episode,
+                        podcastTitle = podcastTitle,
+                        feedUrl = feedUrl,
+                        playRequestId = playRequestId
+                    )
+                    Log.d(
+                        LOG_TAG_NAV,
+                        "Navigate to player | playRequestId=$playRequestId, title=${episode.title}, mediaSource=MediaController, feedUrl=$feedUrl, podcastTitle=$podcastTitle"
+                    )
+                    navController.navigate("$PLAYER_ROUTE/${Uri.encode(playRequestId)}")
                 }
             )
         }
 
         composable(
-            route = "$PLAYER_ROUTE/{$ARG_AUDIO_URL}",
-            arguments = listOf(navArgument(ARG_AUDIO_URL) { type = NavType.StringType })
+            route = "$PLAYER_ROUTE/{$ARG_PLAY_REQUEST_ID}",
+            arguments = listOf(
+                navArgument(ARG_PLAY_REQUEST_ID) { type = NavType.StringType }
+            )
         ) { backStackEntry ->
-            val audioUrl = Uri.decode(backStackEntry.arguments?.getString(ARG_AUDIO_URL).orEmpty())
-            val episode = episodeListViewModel.findEpisodeByAudioUrl(audioUrl)
+            val playRequestId =
+                Uri.decode(backStackEntry.arguments?.getString(ARG_PLAY_REQUEST_ID).orEmpty())
+            Log.d(
+                LOG_TAG_NAV,
+                "Player destination entered | playRequestId=$playRequestId, sourceOfTruth=MediaController, currentMediaId=${playerUiState.currentMediaId}, current=${playerUiState.currentMediaItemSummary}"
+            )
 
-            if (episode != null) {
-                PlayerScreen(
-                    episode = episode,
-                    playerUiState = playerUiState,
-                    onStartEpisode = playbackControllerViewModel::playEpisode,
-                    onTogglePlayPause = playbackControllerViewModel::togglePlayPause,
-                    onSeekBack = playbackControllerViewModel::seekBack,
-                    onSeekForward = playbackControllerViewModel::seekForward,
-                    onSeekTo = playbackControllerViewModel::seekTo
-                )
-            }
+            PlayerScreen(
+                playRequestId = playRequestId,
+                playerUiState = playerUiState,
+                onTogglePlayPause = playbackControllerViewModel::togglePlayPause,
+                onSeekBack = playbackControllerViewModel::seekBack,
+                onSeekForward = playbackControllerViewModel::seekForward,
+                onSeekTo = playbackControllerViewModel::seekTo
+            )
         }
     }
 }
