@@ -83,6 +83,9 @@ fun FreePodNavHost(
                     navController.navigate(
                         "$EPISODES_ROUTE/${Uri.encode(podcast.feedUrl)}/${Uri.encode(podcast.title)}"
                     )
+                },
+                onRemovePodcasts = { feedUrls ->
+                    myPodcastsViewModel.unsubscribe(feedUrls)
                 }
             )
         }
