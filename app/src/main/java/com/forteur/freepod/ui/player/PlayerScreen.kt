@@ -35,7 +35,7 @@ fun PlayerScreen(
 ) {
     Log.d(
         LOG_TAG_UI,
-        "PlayerScreen composed | playRequestId=$playRequestId, sourceOfTruth=MediaController, currentMediaId=${playerUiState.currentMediaId}"
+        "PlayerScreen composed | playRequestId=$playRequestId, currentMediaId=${playerUiState.currentMediaId}"
     )
 
     val positionBucket = playerUiState.currentPositionMs / 5_000L
@@ -51,7 +51,7 @@ fun PlayerScreen(
     ) {
         Log.d(
             LOG_TAG_UI,
-            "PlayerScreen UI state | playRequestId=$playRequestId, sourceOfTruth=MediaController, isConnected=${playerUiState.isConnected}, playbackState=${playerUiState.playbackState}, isPlaying=${playerUiState.isPlaying}, currentMediaId=${playerUiState.currentMediaId}, currentMedia=${playerUiState.currentMediaItemSummary}, titleShown=${playerUiState.title}, artistShown=${playerUiState.artist}, position=${playerUiState.currentPositionMs}, duration=${playerUiState.durationMs}, positionBucket=${positionBucket * 5}s"
+            "PlayerScreen UI state | playRequestId=$playRequestId, currentMediaId=${playerUiState.currentMediaId}, positionBucket=${positionBucket * 5}s, isPlaying=${playerUiState.isPlaying}, isConnected=${playerUiState.isConnected}, playbackState=${playerUiState.playbackState}"
         )
         if (playerUiState.title.isBlank()) {
             Log.w(
