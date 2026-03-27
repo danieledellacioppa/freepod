@@ -101,7 +101,10 @@ class PlaybackService : MediaSessionService() {
             "onTaskRemoved | isPlaying=${activePlayer.isPlaying}, playWhenReady=${activePlayer.playWhenReady}, suppressionReason=${playbackSuppressionReasonToString(activePlayer.playbackSuppressionReason)}, playbackState=${playerStateToString(activePlayer.playbackState)}"
         )
         if (!activePlayer.isPlaying) {
-            debugLog(LOG_TAG_SERVICE, "onTaskRemoved -> stopSelf()")
+            debugLog(
+                LOG_TAG_SERVICE,
+                "FREEPOD_RESET_SOURCE service.onTaskRemoved.stopSelf | current=${activePlayer.currentPosition}, playWhenReady=${activePlayer.playWhenReady}, playbackState=${playerStateToString(activePlayer.playbackState)}"
+            )
             stopSelf()
         }
     }

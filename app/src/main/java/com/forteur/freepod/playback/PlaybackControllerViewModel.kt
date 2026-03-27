@@ -174,7 +174,7 @@ class PlaybackControllerViewModel(
 
         debugLog(
             LOG_TAG_CONTROLLER,
-            "Calling setMediaItem() | playRequestId=$playRequestId, currentBefore=${safeMediaItemSummary(activeController.currentMediaItem)}"
+            "FREEPOD_RESET_SOURCE setMediaItem | playRequestId=$playRequestId, currentBefore=${safeMediaItemSummary(activeController.currentMediaItem)}"
         )
         activeController.setMediaItem(mediaItem)
         debugLog(LOG_TAG_CONTROLLER, "setMediaItem() sent to service | playRequestId=$playRequestId")
@@ -197,7 +197,10 @@ class PlaybackControllerViewModel(
                     "suppressionReason=${activeController.playbackSuppressionReason}"
         )
         if (activeController.isPlaying) {
-            debugLog(LOG_TAG_CONTROLLER, "togglePlayPause -> pause()")
+            debugLog(
+                LOG_TAG_CONTROLLER,
+                "FREEPOD_PAUSE_SOURCE togglePlayPause.pause | current=${activeController.currentPosition}, isPlaying=${activeController.isPlaying}, playWhenReady=${activeController.playWhenReady}, playbackState=${playerStateToString(activeController.playbackState)}"
+            )
             activeController.pause()
             debugLog(
                 LOG_TAG_CONTROLLER,
@@ -216,6 +219,10 @@ class PlaybackControllerViewModel(
     fun seekBack() {
         val activeController = controller ?: return
         val target = (activeController.currentPosition - SEEK_MS).coerceAtLeast(0L)
+        debugLog(
+            LOG_TAG_CONTROLLER,
+            "FREEPOD_RESET_SOURCE seekBack.seekTo | target=$target, currentBefore=${activeController.currentPosition}, isPlaying=${activeController.isPlaying}, playWhenReady=${activeController.playWhenReady}, playbackState=${playerStateToString(activeController.playbackState)}"
+        )
         activeController.seekTo(target)
     }
 
@@ -223,11 +230,20 @@ class PlaybackControllerViewModel(
         val activeController = controller ?: return
         val duration = activeController.duration.takeIf { it > 0 } ?: Long.MAX_VALUE
         val target = (activeController.currentPosition + SEEK_MS).coerceAtMost(duration)
+        debugLog(
+            LOG_TAG_CONTROLLER,
+            "FREEPOD_RESET_SOURCE seekForward.seekTo | target=$target, currentBefore=${activeController.currentPosition}, isPlaying=${activeController.isPlaying}, playWhenReady=${activeController.playWhenReady}, playbackState=${playerStateToString(activeController.playbackState)}"
+        )
         activeController.seekTo(target)
     }
 
     fun seekTo(positionMs: Long) {
-        controller?.seekTo(positionMs)
+        val activeController = controller ?: return
+        debugLog(
+            LOG_TAG_CONTROLLER,
+            "FREEPOD_RESET_SOURCE seekTo | target=$positionMs, currentBefore=${activeController.currentPosition}, isPlaying=${activeController.isPlaying}, playWhenReady=${activeController.playWhenReady}, playbackState=${playerStateToString(activeController.playbackState)}"
+        )
+        activeController.seekTo(positionMs)
     }
 
     private fun publishState() {
