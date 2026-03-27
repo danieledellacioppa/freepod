@@ -20,17 +20,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.forteur.freepod.model.PodcastEpisode
 import com.forteur.freepod.playback.PlayerUiState
 import com.forteur.freepod.util.LOG_TAG_UI
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlayerScreen(
-    episode: PodcastEpisode,
     playRequestId: String,
     playerUiState: PlayerUiState,
-    onStartEpisode: (PodcastEpisode, String) -> Unit,
     onTogglePlayPause: () -> Unit,
     onSeekBack: () -> Unit,
     onSeekForward: () -> Unit,
@@ -38,16 +35,8 @@ fun PlayerScreen(
 ) {
     Log.d(
         LOG_TAG_UI,
-        "PlayerScreen composed | playRequestId=$playRequestId, selectedEpisodeTitle=${episode.title}, selectedEpisodeAudioUrl=${episode.audioUrl}"
+        "PlayerScreen composed | playRequestId=$playRequestId, sourceOfTruth=MediaController, currentMediaId=${playerUiState.currentMediaId}"
     )
-
-    LaunchedEffect(episode.audioUrl) {
-        Log.d(
-            LOG_TAG_UI,
-            "PlayerScreen LaunchedEffect -> onStartEpisode | playRequestId=$playRequestId, episodeTitle=${episode.title}, audioUrl=${episode.audioUrl}, imageUrl=null"
-        )
-        onStartEpisode(episode, playRequestId)
-    }
 
     val positionBucket = playerUiState.currentPositionMs / 5_000L
 
@@ -62,12 +51,12 @@ fun PlayerScreen(
     ) {
         Log.d(
             LOG_TAG_UI,
-            "PlayerScreen UI state | playRequestId=$playRequestId, isConnected=${playerUiState.isConnected}, playbackState=${playerUiState.playbackState}, isPlaying=${playerUiState.isPlaying}, currentMediaId=${playerUiState.currentMediaId}, currentMedia=${playerUiState.currentMediaItemSummary}, titleShown=${playerUiState.title.ifBlank { episode.title }}, position=${playerUiState.currentPositionMs}, duration=${playerUiState.durationMs}, positionBucket=${positionBucket * 5}s"
+            "PlayerScreen UI state | playRequestId=$playRequestId, sourceOfTruth=MediaController, isConnected=${playerUiState.isConnected}, playbackState=${playerUiState.playbackState}, isPlaying=${playerUiState.isPlaying}, currentMediaId=${playerUiState.currentMediaId}, currentMedia=${playerUiState.currentMediaItemSummary}, titleShown=${playerUiState.title}, artistShown=${playerUiState.artist}, position=${playerUiState.currentPositionMs}, duration=${playerUiState.durationMs}, positionBucket=${positionBucket * 5}s"
         )
-        if (playerUiState.title.isBlank() && episode.title.isBlank()) {
+        if (playerUiState.title.isBlank()) {
             Log.w(
                 LOG_TAG_UI,
-                "PlayerScreen metadata missing -> possible empty UI | playRequestId=$playRequestId"
+                "PlayerScreen metadata title missing from MediaController | playRequestId=$playRequestId"
             )
         }
         if (!playerUiState.isConnected) {
@@ -88,16 +77,22 @@ fun PlayerScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = playerUiState.title.ifBlank { episode.title },
+                text = playerUiState.title.ifBlank { "Caricamento episodio..." },
                 style = MaterialTheme.typography.headlineSmall,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
 
-            val descriptionText = playerUiState.description ?: episode.description
-            if (!descriptionText.isNullOrBlank()) {
+            if (!playerUiState.artist.isNullOrBlank()) {
                 Text(
-                    text = descriptionText,
+                    text = playerUiState.artist,
+                    style = MaterialTheme.typography.titleSmall
+                )
+            }
+
+            if (!playerUiState.description.isNullOrBlank()) {
+                Text(
+                    text = playerUiState.description,
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 5,
                     overflow = TextOverflow.Ellipsis

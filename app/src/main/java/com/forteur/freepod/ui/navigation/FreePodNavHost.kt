@@ -2,7 +2,6 @@ package com.forteur.freepod.ui.navigation
 
 import android.net.Uri
 import android.util.Log
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -30,7 +29,6 @@ private const val EPISODES_ROUTE = "episodes"
 private const val PLAYER_ROUTE = "player"
 private const val ARG_FEED_URL = "feedUrl"
 private const val ARG_PODCAST_TITLE = "podcastTitle"
-private const val ARG_AUDIO_URL = "audioUrl"
 private const val ARG_PLAY_REQUEST_ID = "playRequestId"
 
 @Composable
@@ -108,51 +106,42 @@ fun FreePodNavHost(
                 onRetry = { episodeListViewModel.loadEpisodes(feedUrl, podcastTitle) },
                 onEpisodeClick = { episode ->
                     val playRequestId = newPlayRequestId()
+                    playbackControllerViewModel.playEpisode(
+                        episode = episode,
+                        podcastTitle = podcastTitle,
+                        feedUrl = feedUrl,
+                        playRequestId = playRequestId
+                    )
                     Log.d(
                         LOG_TAG_NAV,
-                        "Navigate to player | playRequestId=$playRequestId, audioUrl=${episode.audioUrl}, title=${episode.title}, feedUrl=$feedUrl, podcastTitle=$podcastTitle, lookupSource=EpisodeListViewModel.findEpisodeByAudioUrl"
+                        "Navigate to player | playRequestId=$playRequestId, title=${episode.title}, mediaSource=MediaController, feedUrl=$feedUrl, podcastTitle=$podcastTitle"
                     )
-                    navController.navigate(
-                        "$PLAYER_ROUTE/${Uri.encode(episode.audioUrl)}/${Uri.encode(playRequestId)}"
-                    )
+                    navController.navigate("$PLAYER_ROUTE/${Uri.encode(playRequestId)}")
                 }
             )
         }
 
         composable(
-            route = "$PLAYER_ROUTE/{$ARG_AUDIO_URL}/{$ARG_PLAY_REQUEST_ID}",
+            route = "$PLAYER_ROUTE/{$ARG_PLAY_REQUEST_ID}",
             arguments = listOf(
-                navArgument(ARG_AUDIO_URL) { type = NavType.StringType },
                 navArgument(ARG_PLAY_REQUEST_ID) { type = NavType.StringType }
             )
         ) { backStackEntry ->
-            val audioUrl = Uri.decode(backStackEntry.arguments?.getString(ARG_AUDIO_URL).orEmpty())
             val playRequestId =
                 Uri.decode(backStackEntry.arguments?.getString(ARG_PLAY_REQUEST_ID).orEmpty())
-            val episode = episodeListViewModel.findEpisodeByAudioUrl(audioUrl)
             Log.d(
                 LOG_TAG_NAV,
-                "Player destination entered | playRequestId=$playRequestId, audioUrl=$audioUrl, localLookupFound=${episode != null}, lookupSource=EpisodeListUiState.episodes"
+                "Player destination entered | playRequestId=$playRequestId, sourceOfTruth=MediaController, currentMediaId=${playerUiState.currentMediaId}, current=${playerUiState.currentMediaItemSummary}"
             )
 
-            if (episode != null) {
-                PlayerScreen(
-                    episode = episode,
-                    playRequestId = playRequestId,
-                    playerUiState = playerUiState,
-                    onStartEpisode = playbackControllerViewModel::playEpisode,
-                    onTogglePlayPause = playbackControllerViewModel::togglePlayPause,
-                    onSeekBack = playbackControllerViewModel::seekBack,
-                    onSeekForward = playbackControllerViewModel::seekForward,
-                    onSeekTo = playbackControllerViewModel::seekTo
-                )
-            } else {
-                Log.e(
-                    LOG_TAG_NAV,
-                    "PlayerScreen local lookup failed -> potential blank UI | playRequestId=$playRequestId, audioUrl=$audioUrl"
-                )
-                Text("Impossibile trovare l'episodio selezionato.")
-            }
+            PlayerScreen(
+                playRequestId = playRequestId,
+                playerUiState = playerUiState,
+                onTogglePlayPause = playbackControllerViewModel::togglePlayPause,
+                onSeekBack = playbackControllerViewModel::seekBack,
+                onSeekForward = playbackControllerViewModel::seekForward,
+                onSeekTo = playbackControllerViewModel::seekTo
+            )
         }
     }
 }
