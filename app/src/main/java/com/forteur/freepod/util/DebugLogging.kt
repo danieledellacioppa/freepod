@@ -30,6 +30,12 @@ fun playerStateToString(state: Int): String = when (state) {
     else -> "UNKNOWN($state)"
 }
 
+fun playbackSuppressionReasonToString(reason: Int): String = when (reason) {
+    Player.PLAYBACK_SUPPRESSION_REASON_NONE -> "NONE"
+    Player.PLAYBACK_SUPPRESSION_REASON_TRANSIENT_AUDIO_FOCUS_LOSS -> "TRANSIENT_AUDIO_FOCUS_LOSS"
+    else -> "UNKNOWN($reason)"
+}
+
 fun safeMediaMetadataSummary(metadata: MediaMetadata?): String {
     if (metadata == null) return "metadata=null"
     return "title=${metadata.title}, artist=${metadata.artist}, artworkUri=${metadata.artworkUri}, albumTitle=${metadata.albumTitle}, description=${metadata.description}"

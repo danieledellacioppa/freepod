@@ -13,6 +13,7 @@ import androidx.media3.session.MediaSessionService
 import com.forteur.freepod.util.LOG_TAG_SERVICE
 import com.forteur.freepod.util.bundleSummary
 import com.forteur.freepod.util.debugLog
+import com.forteur.freepod.util.playbackSuppressionReasonToString
 import com.forteur.freepod.util.playerStateToString
 import com.forteur.freepod.util.safeMediaItemSummary
 
@@ -29,9 +30,10 @@ class PlaybackService : MediaSessionService() {
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
+            val activePlayer = player
             debugLog(
                 LOG_TAG_SERVICE,
-                "Service player onIsPlayingChanged | isPlaying=$isPlaying, playbackState=${player?.playbackState?.let(::playerStateToString)}"
+                "Service player onIsPlayingChanged | isPlaying=$isPlaying, playbackState=${activePlayer?.playbackState?.let(::playerStateToString)}, playWhenReady=${activePlayer?.playWhenReady}, suppressionReason=${activePlayer?.playbackSuppressionReason?.let(::playbackSuppressionReasonToString)}, currentPosition=${activePlayer?.currentPosition}, bufferedPosition=${activePlayer?.bufferedPosition}"
             )
         }
 
@@ -53,7 +55,7 @@ class PlaybackService : MediaSessionService() {
         override fun onEvents(player: Player, events: Player.Events) {
             debugLog(
                 LOG_TAG_SERVICE,
-                "Service player onEvents | events=$events, playbackState=${playerStateToString(player.playbackState)}, isPlaying=${player.isPlaying}, current=${safeMediaItemSummary(player.currentMediaItem)}, ${bundleSummary(player.currentMediaItem?.mediaMetadata?.extras)}"
+                "Service player onEvents | events=$events, playbackState=${playerStateToString(player.playbackState)}, isPlaying=${player.isPlaying}, playWhenReady=${player.playWhenReady}, suppressionReason=${playbackSuppressionReasonToString(player.playbackSuppressionReason)}, currentPosition=${player.currentPosition}, bufferedPosition=${player.bufferedPosition}, current=${safeMediaItemSummary(player.currentMediaItem)}, ${bundleSummary(player.currentMediaItem?.mediaMetadata?.extras)}"
             )
         }
     }
@@ -94,7 +96,12 @@ class PlaybackService : MediaSessionService() {
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         val activePlayer = player ?: return
+        debugLog(
+            LOG_TAG_SERVICE,
+            "onTaskRemoved | isPlaying=${activePlayer.isPlaying}, playWhenReady=${activePlayer.playWhenReady}, suppressionReason=${playbackSuppressionReasonToString(activePlayer.playbackSuppressionReason)}, playbackState=${playerStateToString(activePlayer.playbackState)}"
+        )
         if (!activePlayer.isPlaying) {
+            debugLog(LOG_TAG_SERVICE, "onTaskRemoved -> stopSelf()")
             stopSelf()
         }
     }

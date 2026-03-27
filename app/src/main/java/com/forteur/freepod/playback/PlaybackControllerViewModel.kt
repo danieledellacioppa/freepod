@@ -22,6 +22,7 @@ import com.forteur.freepod.util.EXTRA_PLAY_REQUEST_ID
 import com.forteur.freepod.util.EXTRA_PODCAST_TITLE
 import com.forteur.freepod.util.LOG_TAG_CONTROLLER
 import com.forteur.freepod.util.debugLog
+import com.forteur.freepod.util.playbackSuppressionReasonToString
 import com.forteur.freepod.util.playerStateToString
 import com.forteur.freepod.util.safeMediaItemSummary
 import com.forteur.freepod.util.safeMediaMetadataSummary
@@ -63,9 +64,10 @@ class PlaybackControllerViewModel(
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
+            val activeController = controller
             debugLog(
                 LOG_TAG_CONTROLLER,
-                "Controller onIsPlayingChanged | isPlaying=$isPlaying, playbackState=${controller?.playbackState?.let(::playerStateToString)}"
+                "Controller onIsPlayingChanged | isPlaying=$isPlaying, playbackState=${activeController?.playbackState?.let(::playerStateToString)}, playWhenReady=${activeController?.playWhenReady}, suppressionReason=${activeController?.playbackSuppressionReason?.let(::playbackSuppressionReasonToString)}, currentPosition=${activeController?.currentPosition}, bufferedPosition=${activeController?.bufferedPosition}"
             )
             publishState()
         }
@@ -90,7 +92,7 @@ class PlaybackControllerViewModel(
         override fun onEvents(player: Player, events: Player.Events) {
             debugLog(
                 LOG_TAG_CONTROLLER,
-                "Controller onEvents | events=$events, playbackState=${playerStateToString(player.playbackState)}, isPlaying=${player.isPlaying}, current=${safeMediaItemSummary(player.currentMediaItem)}"
+                "Controller onEvents | events=$events, playbackState=${playerStateToString(player.playbackState)}, isPlaying=${player.isPlaying}, playWhenReady=${player.playWhenReady}, suppressionReason=${playbackSuppressionReasonToString(player.playbackSuppressionReason)}, currentPosition=${player.currentPosition}, bufferedPosition=${player.bufferedPosition}, current=${safeMediaItemSummary(player.currentMediaItem)}"
             )
             publishState()
         }
@@ -138,6 +140,10 @@ class PlaybackControllerViewModel(
                 "Requested episode already current -> calling play() | playRequestId=$playRequestId, currentUri=$currentUri"
             )
             activeController.play()
+            debugLog(
+                LOG_TAG_CONTROLLER,
+                "Requested episode already current | after play(): isPlaying=${activeController.isPlaying}, playWhenReady=${activeController.playWhenReady}, playbackState=${playerStateToString(activeController.playbackState)}, suppressionReason=${playbackSuppressionReasonToString(activeController.playbackSuppressionReason)}"
+            )
             return
         }
 
@@ -166,6 +172,10 @@ class PlaybackControllerViewModel(
             "Built MediaItem | playRequestId=$playRequestId, uri=${mediaItem.localConfiguration?.uri}, mediaId=${mediaItem.mediaId}, metadata=${safeMediaMetadataSummary(mediaItem.mediaMetadata)}"
         )
 
+        debugLog(
+            LOG_TAG_CONTROLLER,
+            "Calling setMediaItem() | playRequestId=$playRequestId, currentBefore=${safeMediaItemSummary(activeController.currentMediaItem)}"
+        )
         activeController.setMediaItem(mediaItem)
         debugLog(LOG_TAG_CONTROLLER, "setMediaItem() sent to service | playRequestId=$playRequestId")
         debugLog(LOG_TAG_CONTROLLER, "Calling prepare() | playRequestId=$playRequestId")
@@ -189,9 +199,17 @@ class PlaybackControllerViewModel(
         if (activeController.isPlaying) {
             debugLog(LOG_TAG_CONTROLLER, "togglePlayPause -> pause()")
             activeController.pause()
+            debugLog(
+                LOG_TAG_CONTROLLER,
+                "togglePlayPause | after pause(): isPlaying=${activeController.isPlaying}, playWhenReady=${activeController.playWhenReady}, playbackState=${playerStateToString(activeController.playbackState)}, suppressionReason=${playbackSuppressionReasonToString(activeController.playbackSuppressionReason)}"
+            )
         } else {
             debugLog(LOG_TAG_CONTROLLER, "togglePlayPause -> play()")
             activeController.play()
+            debugLog(
+                LOG_TAG_CONTROLLER,
+                "togglePlayPause | after play(): isPlaying=${activeController.isPlaying}, playWhenReady=${activeController.playWhenReady}, playbackState=${playerStateToString(activeController.playbackState)}, suppressionReason=${playbackSuppressionReasonToString(activeController.playbackSuppressionReason)}"
+            )
         }
     }
 
