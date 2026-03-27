@@ -3,6 +3,7 @@ package com.forteur.freepod.playback
 import android.app.Application
 import android.content.ComponentName
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.core.content.ContextCompat
@@ -29,6 +30,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.security.MessageDigest
 import java.util.concurrent.Executor
 
 private const val SEEK_MS = 15_000L
@@ -113,12 +115,19 @@ class PlaybackControllerViewModel(
         )
     }
 
-    fun playEpisode(episode: PodcastEpisode, playRequestId: String) {
+    fun playEpisode(
+        episode: PodcastEpisode,
+        podcastTitle: String,
+        feedUrl: String,
+        playRequestId: String,
+        artworkUrl: String? = null
+    ) {
         ensureServiceStarted()
         val activeController = controller ?: return
+        val mediaId = buildStableMediaId(episode, feedUrl)
         Log.d(
             LOG_TAG_CONTROLLER,
-            "playEpisode called | playRequestId=$playRequestId, title=${episode.title}, audioUrl=${episode.audioUrl}, imageUrl=null, feedUrl=unknown"
+            "playEpisode called | playRequestId=$playRequestId, mediaId=$mediaId, title=${episode.title}, audioUrl=${episode.audioUrl}, imageUrl=$artworkUrl, feedUrl=$feedUrl, podcastTitle=$podcastTitle"
         )
 
         val currentUri = activeController.currentMediaItem?.localConfiguration?.uri?.toString()
@@ -133,21 +142,22 @@ class PlaybackControllerViewModel(
 
         val mediaMetadata = androidx.media3.common.MediaMetadata.Builder()
             .setTitle(episode.title)
-            .setArtist("FreePod")
-            .setAlbumTitle("FreePod")
+            .setArtist(podcastTitle.ifBlank { "FreePod" })
+            .setAlbumTitle(podcastTitle.ifBlank { "FreePod" })
             .setDescription(episode.description)
+            .setArtworkUri(artworkUrl?.let(Uri::parse))
             .setExtras(
                 Bundle().apply {
                     putString(EXTRA_PLAY_REQUEST_ID, playRequestId)
-                    putString(EXTRA_FEED_URL, null)
-                    putString(EXTRA_PODCAST_TITLE, null)
-                    putString(EXTRA_IMAGE_URL, null)
+                    putString(EXTRA_FEED_URL, feedUrl)
+                    putString(EXTRA_PODCAST_TITLE, podcastTitle)
+                    putString(EXTRA_IMAGE_URL, artworkUrl)
                 }
             )
             .build()
         val mediaItem = MediaItem.Builder()
             .setUri(episode.audioUrl)
-            .setMediaId(episode.audioUrl)
+            .setMediaId(mediaId)
             .setMediaMetadata(mediaMetadata)
             .build()
         Log.d(
@@ -202,10 +212,20 @@ class PlaybackControllerViewModel(
             currentPositionMs = activeController.currentPosition.coerceAtLeast(0L),
             durationMs = activeController.duration.takeIf { it > 0 } ?: 0L,
             title = activeController.mediaMetadata.title?.toString().orEmpty(),
+            artist = activeController.mediaMetadata.artist?.toString(),
             description = activeController.mediaMetadata.description?.toString(),
+            artworkUri = activeController.mediaMetadata.artworkUri?.toString(),
             currentMediaId = activeController.currentMediaItem?.mediaId,
             currentMediaItemSummary = safeMediaItemSummary(activeController.currentMediaItem)
         )
+    }
+
+    private fun buildStableMediaId(episode: PodcastEpisode, feedUrl: String): String {
+        val key = listOf(feedUrl, episode.title, episode.pubDateRaw, episode.audioUrl).joinToString("|")
+        val digest = MessageDigest.getInstance("SHA-256")
+            .digest(key.toByteArray())
+            .joinToString("") { "%02x".format(it) }
+        return "episode-$digest"
     }
 
     private fun startPositionUpdates() {
@@ -251,7 +271,9 @@ data class PlayerUiState(
     val currentPositionMs: Long = 0L,
     val durationMs: Long = 0L,
     val title: String = "",
+    val artist: String? = null,
     val description: String? = null,
+    val artworkUri: String? = null,
     val currentMediaId: String? = null,
     val currentMediaItemSummary: String = "mediaItem=null"
 )

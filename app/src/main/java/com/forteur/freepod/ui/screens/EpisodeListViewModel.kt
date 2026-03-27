@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.forteur.freepod.util.LOG_TAG_FEED
-import com.forteur.freepod.util.LOG_TAG_UI
 
 data class EpisodeListUiState(
     val podcastTitle: String = "",
@@ -67,22 +66,6 @@ class EpisodeListViewModel(
                     )
                 }
         }
-    }
-
-    fun findEpisodeByAudioUrl(audioUrl: String): PodcastEpisode? {
-        val found = _uiState.value.episodes.firstOrNull { it.audioUrl == audioUrl }
-        if (found == null) {
-            Log.e(
-                LOG_TAG_UI,
-                "findEpisodeByAudioUrl failed | audioUrl=$audioUrl, episodesInMemory=${_uiState.value.episodes.size}, feedUrl=${_uiState.value.feedUrl}"
-            )
-        } else {
-            Log.d(
-                LOG_TAG_UI,
-                "findEpisodeByAudioUrl success | audioUrl=$audioUrl, title=${found.title}, feedUrl=${_uiState.value.feedUrl}"
-            )
-        }
-        return found
     }
 
     companion object {
