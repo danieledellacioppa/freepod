@@ -17,6 +17,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,7 +34,8 @@ import com.forteur.freepod.util.LOG_TAG_UI
 fun MyPodcastsScreen(
     uiState: MyPodcastsUiState,
     onRefresh: () -> Unit,
-    onPodcastClick: (SubscribedPodcast) -> Unit
+    onPodcastClick: (SubscribedPodcast) -> Unit,
+    onRemovePodcast: (SubscribedPodcast) -> Unit
 ) {
     LaunchedEffect(Unit) {
         onRefresh()
@@ -98,6 +100,12 @@ fun MyPodcastsScreen(
                                         style = MaterialTheme.typography.labelMedium,
                                         modifier = Modifier.padding(top = 4.dp)
                                     )
+                                }
+                                TextButton(
+                                    onClick = { onRemovePodcast(podcast) },
+                                    modifier = Modifier.padding(top = 6.dp)
+                                ) {
+                                    Text("Rimuovi")
                                 }
                             }
                         }

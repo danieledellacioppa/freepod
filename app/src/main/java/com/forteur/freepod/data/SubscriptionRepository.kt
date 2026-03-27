@@ -20,4 +20,8 @@ class SubscriptionRepository(
     }
 
     fun isSubscribed(feedUrl: String): Boolean = localDataSource.isSubscribed(feedUrl)
+
+    fun unsubscribe(feedUrl: String) {
+        localDataSource.removeSubscription(feedUrl)
+    }
 }

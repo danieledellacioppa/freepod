@@ -29,6 +29,11 @@ class MyPodcastsViewModel(
         )
     }
 
+    fun unsubscribe(feedUrl: String) {
+        subscriptionRepository.unsubscribe(feedUrl)
+        refresh()
+    }
+
     companion object {
         fun factory(subscriptionRepository: SubscriptionRepository): ViewModelProvider.Factory {
             return object : ViewModelProvider.Factory {

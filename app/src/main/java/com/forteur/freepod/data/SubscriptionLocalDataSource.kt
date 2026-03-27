@@ -53,6 +53,22 @@ class SubscriptionLocalDataSource(context: Context) {
         return getAllSubscriptions().any { it.feedUrl == feedUrl }
     }
 
+    fun removeSubscription(feedUrl: String) {
+        val updated = getAllSubscriptions().filterNot { it.feedUrl == feedUrl }
+        val jsonArray = JSONArray()
+        updated.forEach { item ->
+            jsonArray.put(
+                JSONObject().apply {
+                    put(KEY_TITLE, item.title)
+                    put(KEY_FEED_URL, item.feedUrl)
+                    put(KEY_IMAGE, item.imageUrl)
+                    put(KEY_AUTHOR, item.author)
+                }
+            )
+        }
+        prefs.edit().putString(KEY_SUBSCRIPTIONS, jsonArray.toString()).apply()
+    }
+
     companion object {
         private const val PREFS_NAME = "freepod_subscriptions"
         private const val KEY_SUBSCRIPTIONS = "subscriptions"
