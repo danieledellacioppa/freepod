@@ -35,28 +35,22 @@ class SubscriptionLocalDataSource(context: Context) {
         } else {
             updated.add(subscription)
         }
-        val jsonArray = JSONArray()
-        updated.forEach { item ->
-            jsonArray.put(
-                JSONObject().apply {
-                    put(KEY_TITLE, item.title)
-                    put(KEY_FEED_URL, item.feedUrl)
-                    put(KEY_IMAGE, item.imageUrl)
-                    put(KEY_AUTHOR, item.author)
-                }
-            )
-        }
-        prefs.edit().putString(KEY_SUBSCRIPTIONS, jsonArray.toString()).apply()
+        persistSubscriptions(updated)
     }
 
     fun isSubscribed(feedUrl: String): Boolean {
         return getAllSubscriptions().any { it.feedUrl == feedUrl }
     }
 
-    fun removeSubscription(feedUrl: String) {
-        val updated = getAllSubscriptions().filterNot { it.feedUrl == feedUrl }
+    fun removeSubscriptions(feedUrls: Set<String>) {
+        if (feedUrls.isEmpty()) return
+        val updated = getAllSubscriptions().filterNot { it.feedUrl in feedUrls }
+        persistSubscriptions(updated)
+    }
+
+    private fun persistSubscriptions(subscriptions: List<SubscribedPodcast>) {
         val jsonArray = JSONArray()
-        updated.forEach { item ->
+        subscriptions.forEach { item ->
             jsonArray.put(
                 JSONObject().apply {
                     put(KEY_TITLE, item.title)

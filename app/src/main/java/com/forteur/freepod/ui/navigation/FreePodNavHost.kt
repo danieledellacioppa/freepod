@@ -84,8 +84,8 @@ fun FreePodNavHost(
                         "$EPISODES_ROUTE/${Uri.encode(podcast.feedUrl)}/${Uri.encode(podcast.title)}"
                     )
                 },
-                onRemovePodcast = { podcast ->
-                    myPodcastsViewModel.unsubscribe(podcast.feedUrl)
+                onRemovePodcasts = { feedUrls ->
+                    myPodcastsViewModel.unsubscribe(feedUrls)
                 }
             )
         }

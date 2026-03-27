@@ -29,8 +29,8 @@ class MyPodcastsViewModel(
         )
     }
 
-    fun unsubscribe(feedUrl: String) {
-        subscriptionRepository.unsubscribe(feedUrl)
+    fun unsubscribe(feedUrls: Set<String>) {
+        subscriptionRepository.unsubscribe(feedUrls)
         refresh()
     }
 
